@@ -1,0 +1,65 @@
+/* Общие стили для списка вопросов */
+#changelist-form .results {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Стили для строк таблицы */
+#result_list tr {
+    transition: background-color 0.2s;
+}
+
+#result_list tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Неотвеченные вопросы */
+.field-status_icon {
+    width: 30px;
+    text-align: center;
+}
+
+/* Кнопка Telegram */
+.telegram-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    background: #f2f2f2;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.telegram-button:hover {
+    background: #e0e0e0;
+}
+
+/* Форма ответа */
+.inline-related h3 {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* Фильтры */
+#changelist-filter {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#changelist-filter h2 {
+    background: none;
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+/* Поиск */
+#searchbar {
+    border-radius: 4px;
+    padding: 8px;
+}

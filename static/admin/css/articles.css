@@ -1,0 +1,274 @@
+/* static/admin/css/articles.css */
+
+/* Основной контейнер */
+#changelist {
+    padding: 20px;
+    background: #f8fafc;
+}
+
+/* Таблица */
+#result_list {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Заголовки колонок */
+#result_list thead th {
+    background: #f1f5f9;
+    padding: 15px 20px;
+    font-weight: 600;
+    color: #475569;
+    border: none;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+/* Строки таблицы */
+#result_list tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+#result_list tbody tr:hover {
+    background: #f8fafc;
+}
+
+#result_list tbody td {
+    padding: 15px 20px;
+    vertical-align: middle;
+}
+
+/* Заголовок статьи */
+.article-title-container {
+    display: flex;
+    align-items: center;
+}
+
+.article-title {
+    font-size: 15px;
+    color: #2563eb;
+    font-weight: 500;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Дата */
+.article-date {
+    color: #64748b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.date-time {
+    white-space: nowrap;
+}
+
+/* Кнопки действий */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #4ade80;
+    color: white !important;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+    background: #22c55e;
+    transform: translateY(-1px);
+}
+
+/* Поиск */
+#changelist-search {
+    margin-bottom: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#changelist-search input[type="text"] {
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 300px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+#changelist-search input[type="text"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Кнопка поиска */
+#changelist-search input[type="submit"] {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#changelist-search input[type="submit"]:hover {
+    background: #1d4ed8;
+}
+
+/* Фильтры */
+#changelist-filter {
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#changelist-filter h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 12px;
+}
+
+#changelist-filter ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#changelist-filter li {
+    margin: 6px 0;
+}
+
+#changelist-filter li a {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+#changelist-filter li a:hover {
+    color: #2563eb;
+}
+
+#changelist-filter li.selected a {
+    color: #2563eb;
+    font-weight: 500;
+}
+
+/* Мобильные стили */
+@media (max-width: 767px) {
+    #changelist {
+        padding: 10px;
+    }
+
+    #result_list {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .article-title {
+        font-size: 14px;
+        max-width: 200px;
+    }
+
+    .edit-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .date-time {
+        font-size: 13px;
+    }
+
+    #changelist-search input[type="text"] {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    #changelist-filter {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    #result_list thead th,
+    #result_list tbody td {
+        padding: 12px 15px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+
+/* Кнопка добавления */
+.addlink {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4ade80;
+    color: white !important;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none !important;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(74, 222, 128, 0.2);
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.addlink:hover {
+    background: #22c55e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(74, 222, 128, 0.3);
+}
+
+/* CKEditor улучшения */
+.django-ckeditor-widget {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.cke_chrome {
+    border-color: #e2e8f0 !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.cke_top {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.cke_bottom {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}

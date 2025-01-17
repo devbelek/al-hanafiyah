@@ -1,0 +1,20 @@
+#result_list tbody tr.row1 + tr:not(.row1),
+#result_list tbody tr.row2 + tr:not(.row2) {
+    border-top: 2px solid #f0f0f0;
+}
+
+#result_list tbody tr td:first-child {
+    border-left: 3px solid transparent;
+}
+
+#result_list tbody tr:has(td:contains("Вводный урок")) td:first-child {
+    border-left: 3px solid #79aec8;
+}
+
+#result_list tbody tr:has(td:contains("Вводный урок")):not(:first-child) {
+    border-top: 15px solid #f8f8f8;
+}
+
+#result_list tbody tr:not(:has(td:contains("Вводный урок"))) {
+    background-color: #fafafa;
+}
