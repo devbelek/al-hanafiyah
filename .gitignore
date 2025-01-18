@@ -1,0 +1,52 @@
+# Django
+*.log
+*.pot
+*.pyc
+*.py[co]
+__pycache__/
+db.sqlite3
+media/
+staticfiles/
+
+# Environments
+.venv/
+venv/
+ENV/
+
+# Docker
+*.log
+docker-compose.override.yml
+docker-compose.override.yml
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Python
+*.py[cod]
+*.py[cod].cover
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyo
+__pycache__/
+
+# Test coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# MacOS
+.DS_Store
+
+# Miscellaneous
+*.swp

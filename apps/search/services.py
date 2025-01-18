@@ -163,22 +163,88 @@ class SearchService:
         if len(query) < 2:
             return suggestions
 
-        for doc_class in [QuestionDocument, ArticleDocument,
-                          LessonDocument, EventDocument]:
+        # В первую очередь ищем точные совпадения в вопросах
+        search = QuestionDocument.search().query(
+            Q('bool',
+              should=[
+                  # Точное совпадение фразы
+                  Q('match_phrase', content={
+                      'query': query,
+                      'boost': 3,
+                      'slop': 2
+                  }),
+                  # Семантически похожие вопросы
+                  Q('multi_match', {
+                      'query': query,
+                      'fields': ['content^2', 'answer.content'],
+                      'type': 'best_fields',
+                      'minimum_should_match': '70%',
+                      'fuzziness': 'AUTO'
+                  }),
+                  # Поиск по частям предложения
+                  Q('match', content={
+                      'query': query,
+                      'operator': 'and',
+                      'minimum_should_match': '60%'
+                  })
+              ]
+              )
+        )
+
+        # Добавляем фильтр для отвеченных вопросов
+        search = search.filter('term', is_answered=True)
+
+        # Добавляем подсветку совпадений
+        search = search.highlight(
+            'content',
+            'answer.content',
+            pre_tags=['<em>'],
+            post_tags=['</em>'],
+            fragment_size=150,
+            number_of_fragments=1
+        )
+
+        response = search[:5].execute()
+
+        for hit in response:
+            highlight = None
+            if hasattr(hit.meta, 'highlight'):
+                if hasattr(hit.meta.highlight, 'content'):
+                    highlight = hit.meta.highlight.content[0]
+                elif hasattr(hit.meta.highlight, 'answer.content'):
+                    highlight = hit.meta.highlight['answer.content'][0]
+
+            suggestion = {
+                'text': highlight if highlight else hit.content[:100],
+                'type': 'question',
+                'url': f"/questions/{hit.id}",
+                'is_answered': hit.is_answered,
+                'score': hit.meta.score
+            }
+            suggestions.append(suggestion)
+
+        # После этого добавляем результаты из других типов документов
+        for doc_class in [ArticleDocument, LessonDocument, EventDocument]:
             search = doc_class.search().query(
                 Q('multi_match',
                   query=query,
-                  fields=['title^2', 'content'],
-                  fuzziness=1)
+                  fields=['title^3', 'content^2'],
+                  type='best_fields',
+                  minimum_should_match='70%',
+                  fuzziness=1
+                  )
             )
-            response = search[:5].execute()
+            response = search[:2].execute()
 
             for hit in response:
                 suggestion = {
                     'text': hit.title if hasattr(hit, 'title') else hit.content[:100],
                     'type': doc_class._index._name,
-                    'url': f"/{doc_class._index._name}/{hit.id}"
+                    'url': f"/{doc_class._index._name}/{hit.id}",
+                    'score': hit.meta.score
                 }
                 suggestions.append(suggestion)
 
+        # Сортируем все результаты по релевантности
+        suggestions.sort(key=lambda x: x.get('score', 0), reverse=True)
         return suggestions[:5]
