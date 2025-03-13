@@ -12,7 +12,7 @@ staticfiles/
 .venv/
 venv/
 ENV/
-
+config/.env
 # Docker
 *.log
 docker-compose.override.yml
