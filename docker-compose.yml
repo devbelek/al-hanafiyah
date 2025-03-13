@@ -4,6 +4,8 @@ services:
     command: >
       sh -c "python manage.py wait_for_elasticsearch &&
              python manage.py search_index --rebuild -f &&
+             python manage.py makemigrations &&
+             python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
@@ -18,9 +20,36 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - ELASTICSEARCH_DSL_URL=http://elasticsearch:9200
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
     depends_on:
       elasticsearch:
         condition: service_healthy
+      db:
+        condition: service_started
+
+  bot:
+    build: .
+    command: >
+      sh -c "python manage.py makemigrations &&
+             python manage.py migrate &&
+             python manage.py run_bot"
+    volumes:
+      - .:/app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - ELASTICSEARCH_DSL_URL=http://elasticsearch:9200
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      db:
+        condition: service_started
+      web:
+        condition: service_started
 
   db:
     image: postgres:15
@@ -32,7 +61,6 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5433:5432"
-
 
   elasticsearch:
     image: elasticsearch:8.10.4

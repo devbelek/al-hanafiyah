@@ -8,9 +8,14 @@ from .serializers import (
     QuestionDetailSerializer,
     QuestionCreateSerializer
 )
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
+    """
+    API для работы с вопросами и ответами.
+    """
     queryset = Question.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['is_answered']
@@ -24,10 +29,78 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return QuestionDetailSerializer
         return QuestionListSerializer
 
+    @swagger_auto_schema(
+        operation_description="Получение списка всех вопросов",
+        manual_parameters=[
+            openapi.Parameter(
+                'is_answered',
+                openapi.IN_QUERY,
+                description="Фильтр по наличию ответа (true, false)",
+                type=openapi.TYPE_BOOLEAN
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Поиск по содержанию вопроса",
+                type=openapi.TYPE_STRING
+            )
+        ],
+        responses={
+            200: QuestionListSerializer(many=True)
+        }
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Получение подробной информации о вопросе",
+        responses={
+            200: QuestionDetailSerializer(),
+            404: "Вопрос не найден"
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Создание нового вопроса",
+        request_body=QuestionCreateSerializer,
+        responses={
+            201: QuestionDetailSerializer(),
+            200: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'similar_questions': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=QuestionListSerializer()
+                    )
+                },
+                description="Возвращается, если найдены похожие вопросы"
+            ),
+            400: "Некорректные данные",
+            401: "Необходима авторизация"
+        }
+    )
     def create(self, request, *args, **kwargs):
+        """
+        Создание нового вопроса.
+        Если найдены похожие вопросы, они будут возвращены вместо создания нового.
+        """
         serializer = self.get_serializer(data=request.data)
+
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Авторизуйтесь для отправки вопроса'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not request.user.profile.telegram:
+            return Response(
+                {'error': 'Заполните Telegram в профиле для получения ответа'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if serializer.is_valid():
-            # Поиск похожих вопросов
             similar_questions = Question.objects.filter(
                 content__icontains=request.data.get('content'),
                 is_answered=True
@@ -40,24 +113,52 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     ).data
                 })
 
-            question = serializer.save()
+            question = serializer.save(
+                user=request.user,
+                telegram=request.user.profile.telegram
+            )
+
+            from apps.notifications.services import send_admin_notification
+            send_admin_notification(
+                title='Новый вопрос',
+                message=question.content[:100],
+                notification_type='new_question',
+                content_object=question,
+                url=f'/admin/questions/question/{question.id}/change/'
+            )
+
             return Response(
                 QuestionDetailSerializer(question).data,
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=400)
 
+    @swagger_auto_schema(
+        operation_description="Получение списка отвеченных вопросов",
+        responses={200: QuestionListSerializer(many=True)}
+    )
     @action(detail=False)
     def answered(self, request):
-        """Получение отвеченных вопросов"""
+        """
+        Получение списка отвеченных вопросов
+        """
         questions = self.get_queryset().filter(is_answered=True)
         page = self.paginate_queryset(questions)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Получение похожих вопросов",
+        responses={
+            200: QuestionListSerializer(many=True),
+            404: "Вопрос не найден"
+        }
+    )
     @action(detail=True)
     def similar(self, request, pk=None):
-        """Получение похожих вопросов"""
+        """
+        Получение похожих вопросов для указанного вопроса
+        """
         question = self.get_object()
         similar = Question.objects.filter(
             content__icontains=question.content,
@@ -66,3 +167,43 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         serializer = QuestionListSerializer(similar, many=True)
         return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Предварительная проверка на похожие вопросы",
+        manual_parameters=[
+            openapi.Parameter(
+                'text',
+                openapi.IN_QUERY,
+                description="Текст вопроса для проверки",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'similar_questions': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=QuestionListSerializer()
+                    )
+                }
+            )
+        }
+    )
+    @action(detail=False, methods=['get'])
+    def similar_check(self, request):
+        """
+        Предварительная проверка текста вопроса на наличие похожих вопросов
+        """
+        text = request.query_params.get('text', '')
+        if len(text) < 10:
+            return Response({'similar_questions': []})
+
+        similar_questions = Question.objects.filter(
+            content__icontains=text,
+            is_answered=True
+        )[:5]
+
+        serializer = QuestionListSerializer(similar_questions, many=True)
+        return Response({'similar_questions': serializer.data})

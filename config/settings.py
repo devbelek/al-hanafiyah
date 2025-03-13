@@ -2,10 +2,27 @@ import os
 from pathlib import Path
 import environ
 
-env = environ.Env()
-environ.Env.read_env()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(
+    DEBUG=(bool, True),
+    DB_NAME=(str, 'hanafi'),
+    DB_USER=(str, 'ustaz'),
+    DB_PASSWORD=(str, 'ustaz'),
+    DB_HOST=(str, 'db'),
+    DB_PORT=(str, '5432'),
+    TELEGRAM_BOT_TOKEN=(str, ''),
+)
+
+env_file = os.path.join(BASE_DIR, '.env')
+if os.path.exists(env_file):
+    environ.Env.read_env(env_file)
+else:
+    env_file = os.path.join(BASE_DIR, 'config', '.env')
+    if os.path.exists(env_file):
+        environ.Env.read_env(env_file)
+    else:
+        print(f"Файл .env не найден в {BASE_DIR} или {os.path.join(BASE_DIR, 'config')}")
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', default=True)
@@ -23,19 +40,20 @@ INSTALLED_APPS = [
 
     'ckeditor',
     'adminsortable2',
-    # 'storages',
-    # 'cleanup',
     'rest_framework',
     'django_filters',
     'corsheaders',
     'drf_yasg',
     'django_elasticsearch_dsl',
+    'rest_framework.authtoken',
 
     'apps.lessons',
     'apps.questions',
     'apps.articles',
     'apps.events',
     'apps.search',
+    'apps.accounts',
+    'apps.notifications',
 ]
 
 MIDDLEWARE = [
@@ -77,6 +95,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
 }
 
 CORS_ALLOWED_ORIGINS = [
@@ -85,17 +107,23 @@ CORS_ALLOWED_ORIGINS = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
+        'NAME': env('DB_NAME', default='hanafi'),
+        'USER': env('DB_USER', default='ustaz'),
+        'PASSWORD': env('DB_PASSWORD', default='ustaz'),
+        'HOST': env('DB_HOST', default='db'),
+        'PORT': env('DB_PORT', default='5432'),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / "db.sqlite3",
+#     }
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -214,3 +242,23 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
+GOOGLE_OAUTH2_CLIENT_ID = env('GOOGLE_OAUTH2_CLIENT_ID', default='')
+GOOGLE_OAUTH2_CLIENT_SECRET = env('GOOGLE_OAUTH2_CLIENT_SECRET', default='')
+
+PWA_APP_NAME = 'Al-Hanafiyah'
+PWA_APP_DESCRIPTION = 'Исламская образовательная платформа'
+PWA_APP_THEME_COLOR = '#4CAF50'
+PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_START_URL = '/'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/pwa/icons/icon-192x192.png',
+        'sizes': '192x192',
+        'type': 'image/png'
+    }
+]
+
+TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')

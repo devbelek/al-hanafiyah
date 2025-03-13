@@ -10,7 +10,6 @@ class AnswerSerializer(serializers.ModelSerializer):
 
 
 class QuestionListSerializer(serializers.ModelSerializer):
-    """Сериализатор для списка вопросов"""
 
     class Meta:
         model = Question
@@ -18,7 +17,6 @@ class QuestionListSerializer(serializers.ModelSerializer):
 
 
 class QuestionDetailSerializer(serializers.ModelSerializer):
-    """Сериализатор для детального отображения вопроса"""
     answer = AnswerSerializer(read_only=True)
 
     class Meta:
@@ -30,8 +28,7 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания вопроса"""
 
     class Meta:
         model = Question
-        fields = ['content', 'telegram']
+        fields = ['content']

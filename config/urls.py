@@ -50,11 +50,13 @@ schema_view = get_schema_view(
 
 urlpatterns = [
                   path('admin/', admin.site.urls),
-                  path('api/search/', include('apps.search.urls')),  # Добавляем урлы поиска
+                  path('api/search/', include('apps.search.urls')),
                   path('api/', include('apps.lessons.urls')),
                   path('api/', include('apps.questions.urls')),
                   path('api/', include('apps.articles.urls')),
                   path('api/', include('apps.events.urls')),
+                  path('api/auth/', include('apps.accounts.urls')),
+                  path('api/notifications/', include('apps.notifications.urls')),
                   re_path(r'^swagger(?P<format>\.json|\.yaml)$',
                           schema_view.without_ui(cache_timeout=0),
                           name='schema-json'),

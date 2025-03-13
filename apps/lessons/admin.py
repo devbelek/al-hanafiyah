@@ -13,6 +13,7 @@ class UstazGalleryInline(admin.TabularInline):
 @admin.register(UstazProfile)
 class UstazProfileAdmin(admin.ModelAdmin):
     inlines = [UstazGalleryInline]
+    search_fields = ['name']
 
     def has_add_permission(self, request):
         if UstazProfile.objects.exists():
@@ -140,10 +141,9 @@ class LessonAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['telegram', 'lesson', 'helpful_count', 'is_moderated', 'created_at']
+    list_display = ['telegram', 'lesson', 'is_moderated', 'created_at']
     list_filter = ['is_moderated', 'created_at', 'lesson']
     search_fields = ['content', 'telegram']
-    readonly_fields = ['helpful_count']
     date_hierarchy = 'created_at'
     actions = ['approve_comments']
 

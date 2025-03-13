@@ -135,6 +135,38 @@ class SearchService:
         return results
 
     @staticmethod
+    def find_similar_questions(text, limit=3):
+        """
+        Поиск похожих вопросов по тексту.
+        """
+        if len(text) < 10:
+            return []
+
+        search = QuestionDocument.search().query(
+            Q('multi_match',
+              query=text,
+              fields=['content^2'],
+              type='best_fields',
+              minimum_should_match='70%',
+              fuzziness='AUTO')
+        )
+
+        search = search.filter('term', is_answered=True)
+        response = search[:limit].execute()
+
+        results = []
+        for hit in response:
+            results.append({
+                'id': hit.id,
+                'content': hit.content,
+                'created_at': hit.created_at,
+                'is_answered': hit.is_answered,
+                'similarity_score': hit.meta.score
+            })
+
+        return results
+
+    @staticmethod
     def _format_events(events):
         results = []
         for hit in events:

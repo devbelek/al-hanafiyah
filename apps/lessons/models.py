@@ -5,6 +5,7 @@ from ckeditor.fields import RichTextField
 
 
 class UstazProfile(models.Model):
+    name = models.CharField('Имя', max_length=100)
     biography = RichTextField('Биография', blank=True, null=True)
     achievements = models.TextField('Достижения')
 
@@ -143,21 +144,24 @@ class Lesson(models.Model):
 
 class LessonProgress(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='progress')
-    device_hash = models.CharField('Хеш устройства', max_length=64)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    device_hash = models.CharField('Хеш устройства', max_length=64, blank=True)
     timestamp = models.IntegerField('Время в секундах')
     last_viewed = models.DateTimeField('Последний просмотр', auto_now=True)
 
     class Meta:
-        unique_together = ['lesson', 'device_hash']
+        unique_together = [['lesson', 'user']]
+        verbose_name = 'Прогресс урока'
+        verbose_name_plural = 'Прогресс уроков'
 
 
 class Comment(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='Урок')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='Урок', related_name='comments')
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE,
-                               verbose_name='Родительский комментарий')
+                               verbose_name='Родительский комментарий', related_name='replies')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, verbose_name='Пользователь', null=True, blank=True)
     content = models.TextField('Содержание')
-    telegram = models.CharField('Telegram', max_length=100)
-    helpful_count = models.IntegerField('Полезный комментарий', default=0)
+    telegram = models.CharField('Telegram', max_length=100, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     is_moderated = models.BooleanField('Модерировано', default=False)
 
@@ -167,4 +171,17 @@ class Comment(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Комментарий от {self.telegram} к {self.lesson}'
+        username = self.user.username if self.user else self.telegram
+        return f'Комментарий от {username} к {self.lesson}'
+
+
+class CommentLike(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['comment', 'user']
+        verbose_name = 'Лайк комментария'
+        verbose_name_plural = 'Лайки комментариев'
+

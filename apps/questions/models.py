@@ -5,6 +5,7 @@ import html
 
 
 class Question(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, verbose_name='Пользователь', null=True, blank=True)
     content = models.TextField('Вопрос')
     telegram = models.CharField('Telegram', max_length=100, blank=True)
     is_answered = models.BooleanField('Есть ответ', default=False)
@@ -21,6 +22,8 @@ class Question(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
+        if self.user:
+            return f'Вопрос от {self.user.username}'
         return f'Вопрос от {self.telegram}'
 
 

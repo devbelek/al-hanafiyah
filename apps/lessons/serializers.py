@@ -17,10 +17,40 @@ class UstazProfileSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
+    has_user_liked = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'telegram', 'helpful_count', 'created_at']
-        read_only_fields = ['helpful_count']
+        fields = ['id', 'content', 'username', 'avatar', 'like_count',
+                  'has_user_liked', 'created_at', 'replies', 'parent']
+        read_only_fields = ['like_count', 'username', 'avatar', 'has_user_liked', 'replies']
+
+    def get_username(self, obj):
+        if obj.user:
+            return obj.user.username
+        return obj.telegram
+
+    def get_avatar(self, obj):
+        if obj.user and obj.user.profile.avatar:
+            return obj.user.profile.avatar.url
+        return None
+
+    def get_like_count(self, obj):
+        return obj.likes.count()
+
+    def get_has_user_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(user=request.user).exists()
+        return False
+
+    def get_replies(self, obj):
+        replies = obj.replies.all()
+        return CommentSerializer(replies, many=True, context=self.context).data
 
 
 class LessonSerializer(serializers.ModelSerializer):

@@ -2,11 +2,17 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils.html import strip_tags
 from ckeditor.fields import RichTextField
+from apps.lessons.models import UstazProfile
 
 
 class Article(models.Model):
     title = models.CharField('Заголовок', max_length=200)
     content = RichTextField('Содержание')
+    author = models.ForeignKey(UstazProfile, on_delete=models.SET_NULL,
+                               null=True, blank=True,
+                               verbose_name='Автор',
+                               related_name='articles')
+    is_moderated = models.BooleanField('Опубликовано', default=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
     slug = models.SlugField('URL', unique=True, help_text="URL статьи будет сгенерирован автоматически")
