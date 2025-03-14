@@ -25,7 +25,7 @@ class AccountViewSet(viewsets.GenericViewSet):
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'token': openapi.Schema(type=openapi.TYPE_STRING),
-                    'user': UserSerializer(),
+                    'user': openapi.Schema(type=openapi.TYPE_OBJECT),
                     'profile_complete': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                     'created': openapi.Schema(type=openapi.TYPE_BOOLEAN)
                 }
@@ -101,6 +101,9 @@ class AccountViewSet(viewsets.GenericViewSet):
         """
         Получение и обновление данных текущего пользователя
         """
+        if getattr(self, 'swagger_fake_view', False):
+            return Response({})
+
         user = request.user
 
         if request.method == 'GET':
@@ -140,6 +143,9 @@ class AccountViewSet(viewsets.GenericViewSet):
         """
         Получение истории просмотра уроков пользователя
         """
+        if getattr(self, 'swagger_fake_view', False):
+            return Response([])
+
         progress = LessonProgress.objects.filter(user=request.user).order_by('-last_viewed')[:20]
 
         history = []
@@ -176,10 +182,17 @@ class AccountViewSet(viewsets.GenericViewSet):
         """
         Проверка статуса активации Telegram-аккаунта пользователя
         """
+        # Добавить проверку для Swagger
+        if getattr(self, 'swagger_fake_view', False):
+            return Response({
+                'telegram': '',
+                'is_activated': False,
+                'last_activity': None
+            })
+
         user = request.user
 
-        # Логика определения активации и последней активности может отличаться
-        # в зависимости от реализации вашего проекта
+        # Логика определения активации и последней активности
         is_activated = False
         last_activity = None
 
@@ -271,30 +284,11 @@ class AccountViewSet(viewsets.GenericViewSet):
         """
         Получение общего прогресса обучения пользователя
         """
-        # Здесь бы находилась ваша логика получения прогресса обучения
-        # Возвращаем примерный формат ответа
-
-        return Response({
-            'total_lessons': 150,
-            'completed_lessons': 42,
-            'progress_percentage': 28,
-            'by_category': [
-                {
-                    'category_id': 1,
-                    'category_name': 'Фикх',
-                    'total_lessons': 50,
-                    'completed_lessons': 15,
-                    'progress_percentage': 30
-                },
-                # Другие категории
-            ],
-            'recently_completed': [
-                {
-                    'lesson_id': 15,
-                    'lesson_slug': 'lesson-water-types-2',
-                    'title': 'Урок 2: Виды вод',
-                    'completed_at': '2023-10-17T15:45:00Z'
-                },
-                # Другие уроки
-            ]
-        })
+        if getattr(self, 'swagger_fake_view', False):
+            return Response({
+                'total_lessons': 0,
+                'completed_lessons': 0,
+                'progress_percentage': 0,
+                'by_category': [],
+                'recently_completed': []
+            })

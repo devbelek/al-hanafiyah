@@ -439,6 +439,9 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         """
         lesson = self.get_object()
 
+        if getattr(self, 'swagger_fake_view', False):
+            return Response({'timestamp': 0})
+
         if not request.user.is_authenticated:
             return Response({'timestamp': 0})
 
