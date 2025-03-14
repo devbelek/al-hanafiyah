@@ -27,7 +27,7 @@ else:
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '37.252.23.134']
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -262,3 +262,4 @@ PWA_APP_ICONS = [
 ]
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
+from .static_settings import *
