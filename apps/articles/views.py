@@ -33,7 +33,22 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
         responses={
-            200: ArticleListSerializer(many=True)
+            200: openapi.Response(
+                description="Список статей",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                            'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                        }
+                    )
+                )
+            )
         }
     )
     def list(self, request, *args, **kwargs):
@@ -42,7 +57,54 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     @swagger_auto_schema(
         operation_description="Получение подробной информации о статье",
         responses={
-            200: ArticleSerializer(),
+            200: openapi.Response(
+                description="Подробная информация о статье",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'title': openapi.Schema(type=openapi.TYPE_STRING),
+                        'content': openapi.Schema(type=openapi.TYPE_STRING),
+                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                        'updated_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                        'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                        'similar_articles': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'title': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                                    'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                                }
+                            )
+                        ),
+                        'author': openapi.Schema(type=openapi.TYPE_INTEGER, nullable=True),
+                        'author_details': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'biography': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                                'achievements': openapi.Schema(type=openapi.TYPE_STRING),
+                                'photos': openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                            'image': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'description': openapi.Schema(type=openapi.TYPE_STRING)
+                                        }
+                                    )
+                                )
+                            },
+                            nullable=True
+                        ),
+                        'is_moderated': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                    }
+                )
+            ),
             404: "Статья не найдена"
         }
     )
@@ -52,7 +114,22 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     @swagger_auto_schema(
         operation_description="Получение похожих статей",
         responses={
-            200: ArticleListSerializer(many=True),
+            200: openapi.Response(
+                description="Список похожих статей",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                            'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                        }
+                    )
+                )
+            ),
             404: "Статья не найдена"
         }
     )
@@ -69,7 +146,22 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     @swagger_auto_schema(
         operation_description="Получение последних статей",
         responses={
-            200: ArticleListSerializer(many=True)
+            200: openapi.Response(
+                description="Список последних статей",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                            'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                        }
+                    )
+                )
+            )
         }
     )
     @action(detail=False, methods=['get'])
@@ -92,7 +184,22 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
         responses={
-            200: ArticleListSerializer(many=True)
+            200: openapi.Response(
+                description="Список статей по тегам",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                            'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                        }
+                    )
+                )
+            )
         }
     )
     @action(detail=False, methods=['get'])
@@ -125,7 +232,22 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
         responses={
-            200: ArticleListSerializer(many=True),
+            200: openapi.Response(
+                description="Список статей по категории",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                            'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                        }
+                    )
+                )
+            ),
             400: "Не указана категория"
         }
     )

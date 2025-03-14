@@ -46,7 +46,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
             )
         ],
         responses={
-            200: QuestionListSerializer(many=True)
+            200: openapi.Response(
+                description="Список вопросов",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'content': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                        }
+                    )
+                )
+            )
         }
     )
     def list(self, request, *args, **kwargs):
@@ -55,7 +69,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Получение подробной информации о вопросе",
         responses={
-            200: QuestionDetailSerializer(),
+            200: openapi.Response(
+                description="Детальная информация о вопросе",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'content': openapi.Schema(type=openapi.TYPE_STRING),
+                        'telegram': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                        'answer': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'content': openapi.Schema(type=openapi.TYPE_STRING),
+                                'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
+                            }
+                        )
+                    }
+                )
+            ),
             404: "Вопрос не найден"
         }
     )
@@ -66,13 +100,33 @@ class QuestionViewSet(viewsets.ModelViewSet):
         operation_description="Создание нового вопроса",
         request_body=QuestionCreateSerializer,
         responses={
-            201: QuestionDetailSerializer(),
+            201: openapi.Response(
+                description="Созданный вопрос",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'content': openapi.Schema(type=openapi.TYPE_STRING),
+                        'telegram': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
+                    }
+                )
+            ),
             200: openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'similar_questions': openapi.Schema(
                         type=openapi.TYPE_ARRAY,
-                        items=QuestionListSerializer()
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'content': openapi.Schema(type=openapi.TYPE_STRING),
+                                'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                                'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                            }
+                        )
                     )
                 },
                 description="Возвращается, если найдены похожие вопросы"
@@ -135,7 +189,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_description="Получение списка отвеченных вопросов",
-        responses={200: QuestionListSerializer(many=True)}
+        responses={
+            200: openapi.Response(
+                description="Список отвеченных вопросов",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'content': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                        }
+                    )
+                )
+            )
+        }
     )
     @action(detail=False)
     def answered(self, request):
@@ -150,7 +220,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Получение похожих вопросов",
         responses={
-            200: QuestionListSerializer(many=True),
+            200: openapi.Response(
+                description="Список похожих вопросов",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'content': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                        }
+                    )
+                )
+            ),
             404: "Вопрос не найден"
         }
     )
@@ -185,7 +269,15 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 properties={
                     'similar_questions': openapi.Schema(
                         type=openapi.TYPE_ARRAY,
-                        items=QuestionListSerializer()
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'content': openapi.Schema(type=openapi.TYPE_STRING),
+                                'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                                'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN)
+                            }
+                        )
                     )
                 }
             )
