@@ -218,6 +218,63 @@ class QuestionViewSet(viewsets.ModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @swagger_auto_schema(
+        operation_description="Получение списка вопросов текущего пользователя",
+        manual_parameters=[
+            openapi.Parameter(
+                'is_answered',
+                openapi.IN_QUERY,
+                description="Фильтр по наличию ответа (true, false)",
+                type=openapi.TYPE_BOOLEAN
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="Список вопросов пользователя",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'content': openapi.Schema(type=openapi.TYPE_STRING),
+                            'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            'is_answered': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'answer': openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'content': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'created_at': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                 format=openapi.FORMAT_DATETIME)
+                                }
+                            )
+                        }
+                    )
+                )
+            ),
+            401: "Необходима авторизация"
+        }
+    )
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def my_questions(self, request):
+        """
+        Получение списка вопросов текущего пользователя
+        """
+        user = request.user
+        questions = self.get_queryset().filter(user=user)
+
+        is_answered = request.query_params.get('is_answered')
+        if is_answered is not None:
+            is_answered = is_answered.lower() == 'true'
+            questions = questions.filter(is_answered=is_answered)
+
+        questions = questions.order_by('-created_at')
+
+        page = self.paginate_queryset(questions)
+        serializer = QuestionDetailSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    @swagger_auto_schema(
         operation_description="Получение похожих вопросов",
         responses={
             200: openapi.Response(

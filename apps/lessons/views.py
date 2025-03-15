@@ -138,14 +138,32 @@ class ModuleViewSet(viewsets.ReadOnlyModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Получение информации о конкретном модуле",
+        operation_description="Получение информации о конкретном уроке",
+        manual_parameters=[
+            openapi.Parameter(
+                'sort_comments',
+                openapi.IN_QUERY,
+                description="Тип сортировки комментариев (newest, popular)",
+                type=openapi.TYPE_STRING,
+                enum=['newest', 'popular'],
+                default='newest'
+            )
+        ],
         responses={
-            200: ModuleSerializer(),
-            404: "Модуль не найден"
+            200: LessonSerializer(),
+            404: "Урок не найден"
         }
     )
     def retrieve(self, request, *args, **kwargs):
+        sort_by = request.query_params.get('sort_comments', 'newest')
+        self.serializer_context = {'sort_comments_by': sort_by, 'request': request}
         return super().retrieve(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        sort_by = self.request.query_params.get('sort_comments', 'newest')
+        context.update({'sort_comments_by': sort_by})
+        return context
 
     @swagger_auto_schema(
         operation_description="Изменение порядка модулей",

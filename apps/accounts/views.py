@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Count, F, Sum, Case, When, IntegerField
 from .models import UserProfile
-from .serializers import UserSerializer, GoogleAuthSerializer
-from apps.lessons.models import LessonProgress
+from .serializers import UserSerializer, GoogleAuthSerializer, UserPublicSerializer
+from apps.lessons.models import LessonProgress, Lesson, Module, Topic, Category
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -292,3 +293,247 @@ class AccountViewSet(viewsets.GenericViewSet):
                 'by_category': [],
                 'recently_completed': []
             })
+
+        user = request.user
+
+        # Считаем урок просмотренным, если пользователь прошел хотя бы 75% длительности
+        completed_lessons = LessonProgress.objects.filter(
+            user=user,
+        ).annotate(
+            is_completed=Case(
+                # Считаем просмотренным, если смотрели хотя бы 10 секунд (для коротких видео)
+                When(timestamp__gte=10, then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+        ).filter(is_completed=1)
+
+        # Общее количество уроков
+        total_lessons_count = Lesson.objects.count()
+        completed_lessons_count = completed_lessons.count()
+
+        # Процент прогресса
+        progress_percentage = int(
+            (completed_lessons_count / total_lessons_count * 100) if total_lessons_count > 0 else 0)
+
+        # Прогресс по категориям
+        categories = Category.objects.all()
+        by_category = []
+
+        for category in categories:
+            category_lessons = Lesson.objects.filter(
+                module__topic__category=category
+            ).count()
+
+            category_completed = completed_lessons.filter(
+                lesson__module__topic__category=category
+            ).count()
+
+            category_percentage = int((category_completed / category_lessons * 100) if category_lessons > 0 else 0)
+
+            by_category.append({
+                'category_id': category.id,
+                'category_name': category.name,
+                'total_lessons': category_lessons,
+                'completed_lessons': category_completed,
+                'progress_percentage': category_percentage
+            })
+
+        # Недавно завершенные уроки
+        recently_completed = []
+        recent_progress = completed_lessons.order_by('-last_viewed')[:5]
+
+        for progress in recent_progress:
+            recently_completed.append({
+                'lesson_id': progress.lesson.id,
+                'lesson_slug': progress.lesson.slug,
+                'title': progress.lesson.module.name,
+                'completed_at': progress.last_viewed
+            })
+
+        return Response({
+            'total_lessons': total_lessons_count,
+            'completed_lessons': completed_lessons_count,
+            'progress_percentage': progress_percentage,
+            'by_category': by_category,
+            'recently_completed': recently_completed
+        })
+
+    @swagger_auto_schema(
+        operation_description="Получение публичного профиля пользователя",
+        manual_parameters=[
+            openapi.Parameter(
+                'user_id',
+                openapi.IN_QUERY,
+                description="ID пользователя",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
+        responses={
+            200: UserPublicSerializer(),
+            400: "Необходимо указать ID пользователя",
+            404: "Пользователь не найден"
+        }
+    )
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def public_profile(self, request):
+        """
+        Получение публичной информации о пользователе по его ID
+        """
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({"error": "Необходимо указать ID пользователя"}, status=400)
+
+        try:
+            user = User.objects.get(id=user_id)
+            serializer = UserPublicSerializer(user)
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({"error": "Пользователь не найден"}, status=404)
+
+    @swagger_auto_schema(
+        operation_description="Получение публичного профиля пользователя с прогрессом обучения",
+        manual_parameters=[
+            openapi.Parameter(
+                'user_id',
+                openapi.IN_QUERY,
+                description="ID пользователя",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'user_info': openapi.Schema(type=openapi.TYPE_OBJECT, description="Информация о пользователе"),
+                    'learning_progress': openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'progress_percentage': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'total_completed': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'total_lessons': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'by_category': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                          items=openapi.Schema(type=openapi.TYPE_OBJECT)),
+                        },
+                        description="Прогресс обучения"
+                    ),
+                    'stats': openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'questions_count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'comments_count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'likes_received': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        },
+                        description="Статистика активности"
+                    )
+                }
+            ),
+            400: "Необходимо указать ID пользователя",
+            403: "Доступ запрещен",
+            404: "Пользователь не найден"
+        }
+    )
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def profile_with_progress(self, request):
+        """
+        Получение профиля пользователя с прогрессом обучения.
+        Показывает полный прогресс только для текущего пользователя,
+        для других пользователей показывает только общий процент прогресса.
+        """
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({"error": "Необходимо указать ID пользователя"}, status=400)
+
+        try:
+            # Получаем пользователя
+            target_user = User.objects.get(id=user_id)
+
+            # Базовая информация о пользователе
+            user_info = UserPublicSerializer(target_user).data
+
+            # Определяем, смотрит ли пользователь свой профиль
+            is_self = request.user.id == int(user_id)
+
+            # Статистика активности
+            from apps.questions.models import Question
+            from apps.lessons.models import Comment, CommentLike
+
+            questions_count = Question.objects.filter(user=target_user).count()
+            comments_count = Comment.objects.filter(user=target_user).count()
+            likes_received = CommentLike.objects.filter(comment__user=target_user).count()
+
+            stats = {
+                'questions_count': questions_count,
+                'comments_count': comments_count,
+                'likes_received': likes_received,
+            }
+
+            # Прогресс обучения
+            total_lessons = Lesson.objects.count()
+
+            # Считаем урок просмотренным, если пользователь прошел хотя бы 10 секунд
+            completed_lessons = LessonProgress.objects.filter(
+                user=target_user,
+                timestamp__gte=10
+            )
+
+            completed_count = completed_lessons.count()
+            progress_percentage = int((completed_count / total_lessons * 100) if total_lessons > 0 else 0)
+
+            # Базовый прогресс (для всех пользователей)
+            progress = {
+                'progress_percentage': progress_percentage,
+                'total_completed': completed_count,
+                'total_lessons': total_lessons,
+            }
+
+            # Если пользователь смотрит свой профиль, добавляем дополнительную информацию
+            if is_self:
+                categories = Category.objects.all()
+                by_category = []
+
+                for category in categories:
+                    category_lessons = Lesson.objects.filter(
+                        module__topic__category=category
+                    ).count()
+
+                    category_completed = completed_lessons.filter(
+                        lesson__module__topic__category=category
+                    ).count()
+
+                    category_percentage = int(
+                        (category_completed / category_lessons * 100) if category_lessons > 0 else 0)
+
+                    by_category.append({
+                        'category_id': category.id,
+                        'category_name': category.name,
+                        'total_lessons': category_lessons,
+                        'completed_lessons': category_completed,
+                        'progress_percentage': category_percentage
+                    })
+
+                # Недавно завершенные уроки
+                recently_completed = []
+                recent_progress = completed_lessons.order_by('-last_viewed')[:5]
+
+                for prog in recent_progress:
+                    recently_completed.append({
+                        'lesson_id': prog.lesson.id,
+                        'lesson_slug': prog.lesson.slug,
+                        'title': prog.lesson.module.name,
+                        'completed_at': prog.last_viewed
+                    })
+
+                progress['by_category'] = by_category
+                progress['recently_completed'] = recently_completed
+
+            return Response({
+                'user_info': user_info,
+                'learning_progress': progress,
+                'stats': stats
+            })
+
+        except User.DoesNotExist:
+            return Response({"error": "Пользователь не найден"}, status=404)

@@ -36,6 +36,25 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class UserPublicSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    telegram = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'date_joined', 'avatar', 'telegram']
+
+    def get_avatar(self, obj):
+        if hasattr(obj, 'profile') and obj.profile.avatar:
+            return obj.profile.avatar.url
+        return None
+
+    def get_telegram(self, obj):
+        if hasattr(obj, 'profile'):
+            return obj.profile.telegram
+        return None
+
+
 class GoogleAuthSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)
 
