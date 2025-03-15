@@ -1,7 +1,8 @@
 from django.db import models
-from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 from ckeditor.fields import RichTextField
+from django.utils.text import slugify
+from django.utils.crypto import get_random_string
 
 
 class UstazProfile(models.Model):
@@ -41,7 +42,25 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            if not base_slug:
+                try:
+                    from transliterate import slugify as tr_slugify
+                    base_slug = tr_slugify(self.name, language_code='ru')
+                except ImportError:
+                    base_slug = 'category'
+            if not base_slug:
+                base_slug = f"category-{str(self.id or '')}"
+            slug = base_slug
+            counter = 1
+
+            while Category.objects.filter(slug=slug).exists():
+                random_suffix = get_random_string(4).lower()
+                slug = f"{base_slug}-{counter}-{random_suffix}"
+                counter += 1
+
+            self.slug = slug
+
         super().save(*args, **kwargs)
 
     class Meta:
