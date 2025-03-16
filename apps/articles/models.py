@@ -31,4 +31,9 @@ class Article(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
+
+        if not self.short_description and self.content:
+            clean_text = strip_tags(self.content)
+            self.short_description = clean_text[:250] + '...' if len(clean_text) > 250 else clean_text
+
         super().save(*args, **kwargs)

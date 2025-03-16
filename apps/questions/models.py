@@ -16,6 +16,7 @@ class Question(models.Model):
         text = strip_tags(text)
         return text
 
+
     class Meta:
         verbose_name = 'Вопрос'
         verbose_name_plural = 'Вопросы'

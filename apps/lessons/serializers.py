@@ -65,16 +65,22 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class LessonSerializer(serializers.ModelSerializer):
-    comments = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
             'id', 'module', 'media_type',
-            'media_file', 'is_intro', 'order', 'created_at',
+            'media_file', 'thumbnail_url', 'is_intro', 'order', 'created_at',
             'updated_at', 'slug', 'comments'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'thumbnail_url']
+
+    def get_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            return obj.thumbnail.url
+        return None
 
     def get_comments(self, obj):
         comments = obj.comments.filter(parent=None)

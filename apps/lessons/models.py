@@ -3,6 +3,10 @@ from django.core.exceptions import ValidationError
 from ckeditor.fields import RichTextField
 from django.utils.text import slugify
 from django.utils.crypto import get_random_string
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
+import os
 
 
 class UstazProfile(models.Model):
@@ -26,6 +30,7 @@ class UstazProfile(models.Model):
 class UstazGallery(models.Model):
     profile = models.ForeignKey(UstazProfile, on_delete=models.CASCADE, related_name='photos')
     image = models.ImageField('Фотография', upload_to='ustaz_gallery/')
+    thumbnail = models.ImageField('Миниатюра', upload_to='ustaz_gallery/thumbnails/', blank=True, null=True)
     description = models.CharField('Описание', max_length=255, blank=True)
 
     class Meta:
@@ -34,6 +39,28 @@ class UstazGallery(models.Model):
 
     def __str__(self):
         return f'Фотография {self.id}'
+
+    def create_thumbnail(self):
+        if not self.image:
+            return
+        img = Image.open(self.image)
+        width = 300
+        ratio = width / float(img.width)
+        height = int(float(img.height) * ratio)
+        img = img.resize((width, height), Image.LANCZOS)
+        thumb_io = BytesIO()
+        img_format = 'JPEG' if self.image.name.lower().endswith('.jpg') or self.image.name.lower().endswith(
+            '.jpeg') else 'PNG'
+        img.save(thumb_io, format=img_format, quality=85)
+        filename = os.path.basename(self.image.name)
+        name, ext = os.path.splitext(filename)
+        thumb_filename = f"{name}_thumb{ext}"
+        self.thumbnail.save(thumb_filename, ContentFile(thumb_io.getvalue()), save=False)
+
+    def save(self, *args, **kwargs):
+        if not self.thumbnail:
+            self.create_thumbnail()
+        super().save(*args, **kwargs)
 
 
 class Category(models.Model):
@@ -125,6 +152,7 @@ class Lesson(models.Model):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, verbose_name='Модуль')
     media_type = models.CharField('Тип медиа', max_length=5, choices=MEDIA_TYPES)
     media_file = models.FileField('Медиа файл', upload_to='lessons/%Y/%m/%d/')
+    thumbnail = models.ImageField('Превью', upload_to='lessons/thumbnails/%Y/%m/', blank=True, null=True)
     is_intro = models.BooleanField('Вводный урок', default=False)
     order = models.IntegerField('Порядок', default=0)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
@@ -146,6 +174,44 @@ class Lesson(models.Model):
                 raise ValidationError({'is_intro': 'В модуле уже есть вводный урок'})
             self.order = 0
 
+    def create_thumbnail(self):
+        if self.media_type != 'video' or not self.media_file:
+            return
+
+        try:
+            import subprocess
+            import tempfile
+            import os
+            from django.core.files import File
+
+            temp_thumb = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+            temp_thumb.close()
+
+            media_path = self.media_file.path
+
+            command = [
+                'ffmpeg', '-i', media_path,
+                '-ss', '00:00:05',
+                '-vframes', '1',
+                '-vf', 'scale=480:-1',
+                '-q:v', '3',
+                temp_thumb.name
+            ]
+
+            subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            with open(temp_thumb.name, 'rb') as f:
+                filename = os.path.basename(self.media_file.name)
+                name, _ = os.path.splitext(filename)
+                thumb_filename = f"{name}_thumb.jpg"
+
+                self.thumbnail.save(thumb_filename, File(f), save=False)
+
+            os.unlink(temp_thumb.name)
+
+        except Exception as e:
+            print(f"Ошибка при создании миниатюры: {e}")
+
     def save(self, *args, **kwargs):
         if not self.slug:
             if self.is_intro:
@@ -158,49 +224,13 @@ class Lesson(models.Model):
                 self.slug = f"{base_slug}-{counter}"
                 counter += 1
 
+        if not self.thumbnail and self.media_type == 'video':
+            if not self.pk:
+                super().save(*args, **kwargs)
+                self.create_thumbnail()
+                super().save(*args, **kwargs)
+                return
+            else:
+                self.create_thumbnail()
+
         super().save(*args, **kwargs)
-
-
-class LessonProgress(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='progress')
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
-    device_hash = models.CharField('Хеш устройства', max_length=64, blank=True)
-    timestamp = models.IntegerField('Время в секундах')
-    last_viewed = models.DateTimeField('Последний просмотр', auto_now=True)
-
-    class Meta:
-        unique_together = [['lesson', 'user']]
-        verbose_name = 'Прогресс урока'
-        verbose_name_plural = 'Прогресс уроков'
-
-
-class Comment(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='Урок', related_name='comments')
-    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE,
-                               verbose_name='Родительский комментарий', related_name='replies')
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, verbose_name='Пользователь', null=True, blank=True)
-    content = models.TextField('Содержание')
-    telegram = models.CharField('Telegram', max_length=100, blank=True)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    is_moderated = models.BooleanField('Модерировано', default=False)
-
-    class Meta:
-        verbose_name = 'Комментарий'
-        verbose_name_plural = 'Комментарии'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        username = self.user.username if self.user else self.telegram
-        return f'Комментарий от {username} к {self.lesson}'
-
-
-class CommentLike(models.Model):
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ['comment', 'user']
-        verbose_name = 'Лайк комментария'
-        verbose_name_plural = 'Лайки комментариев'
-
