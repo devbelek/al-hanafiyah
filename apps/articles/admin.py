@@ -10,13 +10,23 @@ from .models import Article
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ['title_display', 'author_display', 'date_display', 'edit_button']
+    list_display = ['title_display', 'thumbnail_display', 'author_display', 'date_display', 'edit_button']
     list_filter = ['created_at', 'author', 'is_moderated']
     search_fields = ['title', 'content']
-    fields = ['title', 'content', 'author', 'is_moderated']
+    fields = ['title', 'content', 'short_description', 'image', 'author', 'is_moderated']
     ordering = ['-created_at']
     list_per_page = 20
-    autocomplete_fields = ['author']  # Добавляем автозаполнение для поля author
+    autocomplete_fields = ['author']
+
+    def thumbnail_display(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" width="50" height="50" style="object-fit: cover;" />',
+                obj.image.url
+            )
+        return '-'
+
+    thumbnail_display.short_description = 'Изображение'
 
     def title_display(self, obj):
         # Ограничиваем длину заголовка для компактности

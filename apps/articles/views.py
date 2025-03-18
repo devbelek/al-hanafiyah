@@ -17,6 +17,10 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['title', 'content']
     lookup_field = 'slug'
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        return context
+
     def get_serializer_class(self):
         if self.action == 'list':
             return ArticleListSerializer
@@ -43,8 +47,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                             'title': openapi.Schema(type=openapi.TYPE_STRING),
                             'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                             'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                            'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                         }
                     )
                 )
@@ -65,6 +72,9 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                         'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'title': openapi.Schema(type=openapi.TYPE_STRING),
                         'content': openapi.Schema(type=openapi.TYPE_STRING),
+                        'short_description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
                         'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
                         'updated_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
                         'slug': openapi.Schema(type=openapi.TYPE_STRING),
@@ -76,8 +86,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                                     'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                                     'title': openapi.Schema(type=openapi.TYPE_STRING),
                                     'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                                    'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                                    'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                                    'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                                 }
                             )
                         ),
@@ -124,8 +137,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                             'title': openapi.Schema(type=openapi.TYPE_STRING),
                             'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                             'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                            'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                         }
                     )
                 )
@@ -140,7 +156,7 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         """
         article = self.get_object()
         similar_articles = Article.objects.exclude(id=article.id)[:5]
-        serializer = ArticleListSerializer(similar_articles, many=True)
+        serializer = ArticleListSerializer(similar_articles, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -156,8 +172,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                             'title': openapi.Schema(type=openapi.TYPE_STRING),
                             'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                             'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                            'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                         }
                     )
                 )
@@ -170,7 +189,7 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         Получение последних добавленных статей.
         """
         latest_articles = self.get_queryset().order_by('-created_at')[:5]
-        serializer = ArticleListSerializer(latest_articles, many=True)
+        serializer = ArticleListSerializer(latest_articles, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -194,8 +213,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                             'title': openapi.Schema(type=openapi.TYPE_STRING),
                             'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                             'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                            'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                         }
                     )
                 )
@@ -217,7 +239,7 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
 
         # В данном случае просто вернем все статьи, так как в исходной модели нет поля тегов
         articles = self.get_queryset()[:5]
-        serializer = ArticleListSerializer(articles, many=True)
+        serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -242,8 +264,11 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER),
                             'title': openapi.Schema(type=openapi.TYPE_STRING),
                             'slug': openapi.Schema(type=openapi.TYPE_STRING),
+                            'short_description': openapi.Schema(type=openapi.TYPE_STRING),
                             'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
-                            'author_name': openapi.Schema(type=openapi.TYPE_STRING)
+                            'author_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'image': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                            'image_url': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                         }
                     )
                 )
@@ -266,5 +291,5 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
 
         # В данном случае просто вернем все статьи, так как в исходной модели нет поля category
         articles = self.get_queryset()[:5]
-        serializer = ArticleListSerializer(articles, many=True)
+        serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
