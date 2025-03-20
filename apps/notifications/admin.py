@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Notification, PushSubscription
+from .models import Notification, PushSubscription, NotificationSettings
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
@@ -12,4 +12,10 @@ class NotificationAdmin(admin.ModelAdmin):
 class PushSubscriptionAdmin(admin.ModelAdmin):
     list_display = ['user', 'browser', 'device', 'created_at']
     list_filter = ['browser', 'device']
+    search_fields = ['user__username']
+
+@admin.register(NotificationSettings)
+class NotificationSettingsAdmin(admin.ModelAdmin):
+    list_display = ['user', 'push_enabled', 'email_enabled']
+    list_filter = ['push_enabled', 'email_enabled']
     search_fields = ['user__username']

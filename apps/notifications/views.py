@@ -1,8 +1,8 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Notification, PushSubscription
-from .serializers import NotificationSerializer, PushSubscriptionSerializer
+from .models import Notification, PushSubscription, NotificationSettings
+from .serializers import NotificationSerializer, PushSubscriptionSerializer, NotificationSettingsSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -114,6 +114,42 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         self.get_queryset().update(is_read=True)
         return Response({'status': 'success'})
 
+    @swagger_auto_schema(
+        method='get',
+        operation_description="Получение настроек уведомлений пользователя",
+        responses={
+            200: NotificationSettingsSerializer(),
+            401: "Необходима авторизация"
+        }
+    )
+    @swagger_auto_schema(
+        method='put',
+        operation_description="Обновление настроек уведомлений пользователя",
+        request_body=NotificationSettingsSerializer,
+        responses={
+            200: NotificationSettingsSerializer(),
+            400: "Некорректные данные",
+            401: "Необходима авторизация"
+        }
+    )
+    @action(detail=False, methods=['get', 'put'], url_path='settings')
+    def settings(self, request):
+        """
+        Получение и обновление настроек уведомлений пользователя
+        """
+        settings, created = NotificationSettings.objects.get_or_create(user=request.user)
+
+        if request.method == 'GET':
+            serializer = NotificationSettingsSerializer(settings)
+            return Response(serializer.data)
+
+        # PUT метод
+        serializer = NotificationSettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PushSubscriptionViewSet(viewsets.ModelViewSet):
     """
@@ -121,6 +157,7 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
     """
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete']  # Явно определяем поддерживаемые методы
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -153,29 +190,6 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Получение детальной информации о push-подписке",
-        responses={
-            200: openapi.Response(
-                description="Детальная информация о push-подписке",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'subscription_info': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'browser': openapi.Schema(type=openapi.TYPE_STRING),
-                        'device': openapi.Schema(type=openapi.TYPE_STRING),
-                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
-                    }
-                )
-            ),
-            401: "Необходима авторизация",
-            404: "Подписка не найдена"
-        }
-    )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-
-    @swagger_auto_schema(
         operation_description="Создание новой push-подписки",
         request_body=PushSubscriptionSerializer,
         responses={
@@ -198,56 +212,6 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Обновление push-подписки",
-        request_body=PushSubscriptionSerializer,
-        responses={
-            200: openapi.Response(
-                description="Обновленная push-подписка",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'subscription_info': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'browser': openapi.Schema(type=openapi.TYPE_STRING),
-                        'device': openapi.Schema(type=openapi.TYPE_STRING),
-                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
-                    }
-                )
-            ),
-            400: "Некорректные данные",
-            401: "Необходима авторизация",
-            404: "Подписка не найдена"
-        }
-    )
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Частичное обновление push-подписки",
-        request_body=PushSubscriptionSerializer,
-        responses={
-            200: openapi.Response(
-                description="Обновленная push-подписка",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'subscription_info': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'browser': openapi.Schema(type=openapi.TYPE_STRING),
-                        'device': openapi.Schema(type=openapi.TYPE_STRING),
-                        'created_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
-                    }
-                )
-            ),
-            400: "Некорректные данные",
-            401: "Необходима авторизация",
-            404: "Подписка не найдена"
-        }
-    )
-    def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_description="Удаление push-подписки",

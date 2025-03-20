@@ -52,3 +52,28 @@ class PushSubscription(models.Model):
 
     def __str__(self):
         return f'Push-подписка {self.user.username}'
+
+
+class NotificationSettings(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_settings')
+    push_enabled = models.BooleanField('Push-уведомления', default=True)
+    email_enabled = models.BooleanField('Email-уведомления', default=False)
+    notification_types = models.JSONField('Типы уведомлений', default=dict)
+
+    class Meta:
+        verbose_name = 'Настройки уведомлений'
+        verbose_name_plural = 'Настройки уведомлений'
+
+    def __str__(self):
+        return f'Настройки уведомлений пользователя {self.user.username}'
+
+    def save(self, *args, **kwargs):
+        if not self.notification_types:
+            self.notification_types = {
+                'question_answer': True,
+                'comment_reply': True,
+                'new_lesson': True,
+                'new_event': True,
+                'system': True
+            }
+        super().save(*args, **kwargs)
