@@ -152,12 +152,9 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class PushSubscriptionViewSet(viewsets.ModelViewSet):
-    """
-    API для управления push-подписками.
-    """
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get', 'post', 'delete']  # Явно определяем поддерживаемые методы
+    http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
