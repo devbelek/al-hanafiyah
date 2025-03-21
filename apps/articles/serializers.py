@@ -35,10 +35,11 @@ class ArticleSerializer(serializers.ModelSerializer):
 class ArticleListSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'short_description', 'slug', 'created_at', 'author_name', 'image', 'image_url']
+        fields = ['id', 'title', 'content', 'slug', 'created_at', 'author_name', 'image', 'image_url']
 
     def get_author_name(self, obj):
         if obj.author:
@@ -52,3 +53,6 @@ class ArticleListSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         return None
+
+    def get_content(self, obj):
+        return obj.content
