@@ -8,7 +8,6 @@ from apps.lessons.models import UstazProfile
 class Article(models.Model):
     title = models.CharField('Заголовок', max_length=200)
     content = RichTextField('Содержание')
-    short_description = models.TextField('Краткое описание', blank=True)
     image = models.ImageField('Изображение', upload_to='articles/', null=True, blank=True)
     author = models.ForeignKey(UstazProfile, on_delete=models.SET_NULL,
                                null=True, blank=True,

@@ -11,7 +11,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = [
-            'id', 'title', 'content', 'short_description', 'image', 'image_url', 'created_at',
+            'id', 'title', 'content', 'image', 'image_url', 'created_at',
             'updated_at', 'slug', 'similar_articles',
             'author', 'author_details', 'is_moderated'
         ]
@@ -35,7 +35,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 class ArticleListSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
-    content = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -53,6 +52,3 @@ class ArticleListSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         return None
-
-    def get_content(self, obj):
-        return obj.content
