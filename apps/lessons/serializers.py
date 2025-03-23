@@ -106,12 +106,28 @@ class ModuleSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'topic', 'slug', 'lessons']
 
 
+class CategoryMinSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug']
+
+
 class TopicSerializer(serializers.ModelSerializer):
     modules = ModuleSerializer(many=True, read_only=True)
+    category = CategoryMinSerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'category', 'slug', 'modules']
+        fields = ['id', 'name', 'category', 'slug', 'image', 'image_url', 'modules']
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
 
 
 class CategorySerializer(serializers.ModelSerializer):

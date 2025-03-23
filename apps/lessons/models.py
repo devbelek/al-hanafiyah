@@ -81,6 +81,7 @@ class Topic(models.Model):
     name = models.CharField('Название', max_length=200)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='Категория')
     slug = models.SlugField(unique=True)
+    image = models.ImageField('Изображение', upload_to='topics/', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
