@@ -115,11 +115,12 @@ class SearchService:
     def _format_lessons(lessons):
         results = []
         for hit in lessons:
-            highlight = (
-                hit.meta.highlight.get('module.name', [hit.module.name])[0]
-                if hasattr(hit.meta, 'highlight')
-                else hit.module.name
-            )
+            highlight = hit.module.name
+
+            if hasattr(hit.meta, 'highlight'):
+                if hasattr(hit.meta.highlight, 'module.name'):
+                    highlight = hit.meta.highlight['module.name'][0]
+
             results.append({
                 'id': hit.id,
                 'type': 'lesson',
