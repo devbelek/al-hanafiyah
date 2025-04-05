@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from django_elasticsearch_dsl.registries import registry
+from elasticsearch.exceptions import NotFoundError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,29 +10,35 @@ class Command(BaseCommand):
     help = 'Пересоздание индексов Elasticsearch'
 
     def handle(self, *args, **options):
-        self.stdout.write('Удаление старых индексов...')
-        try:
-            registry.delete_all_indices()
-            self.stdout.write(self.style.SUCCESS('Старые индексы успешно удалены'))
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Ошибка при удалении индексов: {e}'))
+        # Получаем все зарегистрированные документы
+        for doc in registry.get_documents():
+            index_name = doc._index._name
+            self.stdout.write(f'Обработка индекса: {index_name}')
 
-        self.stdout.write('Создание новых индексов...')
-        try:
-            registry.create_all_indices()
-            self.stdout.write(self.style.SUCCESS('Новые индексы успешно созданы'))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Ошибка при создании индексов: {e}'))
-            return
-
-        self.stdout.write('Обновление данных в индексах...')
-        for index in registry.get_indices():
-            self.stdout.write(f'Обновление индекса: {index._name}')
+            # Пытаемся удалить индекс
             try:
-                qs = index.get_queryset()
-                index.update(qs)
-                self.stdout.write(self.style.SUCCESS(f'Индекс {index._name} успешно обновлен'))
+                self.stdout.write(f'Удаление индекса {index_name}...')
+                doc._index.delete(ignore=404)
+                self.stdout.write(self.style.SUCCESS(f'Индекс {index_name} успешно удален'))
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Ошибка при обновлении индекса {index._name}: {e}'))
+                self.stdout.write(self.style.WARNING(f'Ошибка при удалении индекса {index_name}: {e}'))
 
-        self.stdout.write(self.style.SUCCESS('Индексы успешно пересозданы!'))
+            # Создаем индекс заново
+            try:
+                self.stdout.write(f'Создание индекса {index_name}...')
+                doc._index.create()
+                self.stdout.write(self.style.SUCCESS(f'Индекс {index_name} успешно создан'))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Ошибка при создании индекса {index_name}: {e}'))
+                continue
+
+            # Индексируем данные
+            try:
+                self.stdout.write(f'Индексация данных для {index_name}...')
+                qs = doc.get_queryset()
+                doc().update(qs)
+                self.stdout.write(self.style.SUCCESS(f'Данные для индекса {index_name} успешно проиндексированы'))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Ошибка при индексации данных для {index_name}: {e}'))
+
+        self.stdout.write(self.style.SUCCESS('Процесс пересоздания индексов завершен!'))
