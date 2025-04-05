@@ -32,12 +32,16 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f'Ошибка при создании индекса {index_name}: {e}'))
                 continue
 
-            # Индексируем данные
             try:
                 self.stdout.write(f'Индексация данных для {index_name}...')
-                qs = doc.get_queryset()
-                doc().update(qs)
-                self.stdout.write(self.style.SUCCESS(f'Данные для индекса {index_name} успешно проиндексированы'))
+                doc_instance = doc()
+                qs = doc_instance.get_queryset()
+                if qs:
+                    self.stdout.write(f'Найдено {qs.count()} записей для индексации')
+                    doc_instance.update(qs)
+                    self.stdout.write(self.style.SUCCESS(f'Данные для индекса {index_name} успешно проиндексированы'))
+                else:
+                    self.stdout.write(self.style.WARNING(f'Нет данных для индексации в {index_name}'))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Ошибка при индексации данных для {index_name}: {e}'))
 
