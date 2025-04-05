@@ -16,7 +16,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
     volumes:
@@ -27,7 +27,7 @@ services:
       timeout: 30s
       retries: 3
     restart: unless-stopped
-    mem_limit: 384m
+    mem_limit: 768m
 
   web:
     build: .
@@ -88,6 +88,32 @@ services:
       - db
       - web
     restart: unless-stopped
+
+  indexer:
+    build: .
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do
+              echo 'Sleeping for 12 hours before rebuilding indices...' &&
+              sleep 12h &&
+              echo 'Starting Elasticsearch indices rebuild...' &&
+              python manage.py rebuild_indices &&
+              echo 'Indices rebuild completed!'
+             done"
+    volumes:
+      - .:/app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=True
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - ELASTICSEARCH_DSL_URL=http://elasticsearch:9200
+    depends_on:
+      - db
+      - elasticsearch
 
 volumes:
   postgres_data:
