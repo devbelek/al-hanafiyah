@@ -14,6 +14,7 @@ class Article(models.Model):
                                verbose_name='Автор',
                                related_name='articles')
     is_moderated = models.BooleanField('Опубликовано', default=True)
+    category = models.ForeignKey('lessons.Category', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Категория')
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
     slug = models.SlugField('URL', unique=True, help_text="URL статьи будет сгенерирован автоматически")
@@ -32,9 +33,5 @@ class Article(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
-
-        if not self.short_description and self.content:
-            clean_text = strip_tags(self.content)
-            self.short_description = clean_text[:250] + '...' if len(clean_text) > 250 else clean_text
 
         super().save(*args, **kwargs)

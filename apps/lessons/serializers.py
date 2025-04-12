@@ -116,10 +116,12 @@ class TopicSerializer(serializers.ModelSerializer):
     modules = ModuleSerializer(many=True, read_only=True)
     category = CategoryMinSerializer(read_only=True)
     image_url = serializers.SerializerMethodField()
+    module_count = serializers.IntegerField(read_only=True)
+    all_lessons_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'category', 'slug', 'image', 'image_url', 'modules']
+        fields = ['id', 'name', 'category', 'slug', 'image', 'image_url', 'modules', 'module_count', 'all_lessons_count']
 
     def get_image_url(self, obj):
         if obj.image:

@@ -8,6 +8,7 @@ from .serializers import (
     CategorySerializer, TopicSerializer, ModuleSerializer,
     LessonSerializer, CommentSerializer, UstazProfileSerializer
 )
+from django.db.models import Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -68,12 +69,22 @@ class TopicViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Темы в рамках категорий.
     """
-    queryset = Topic.objects.all()
     serializer_class = TopicSerializer
     lookup_field = 'slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['category']
     search_fields = ['name']
+
+    def get_queryset(self):
+        queryset = Topic.objects.all()
+        queryset = queryset.annotate(
+            module_count=Count('module', distinct=True)
+        )
+        queryset = queryset.annotate(
+            all_lessons_count=Count('module__lesson', distinct=True)
+        )
+
+        return queryset
 
     @swagger_auto_schema(
         operation_description="Получение списка всех тем",

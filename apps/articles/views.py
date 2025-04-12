@@ -283,12 +283,6 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         category_id = request.query_params.get('category')
         if not category_id:
             return Response({"error": "Не указана категория"}, status=400)
-
-        # Логика может отличаться в зависимости от реализации вашей модели статей с категориями
-        # Примерный код:
-        # articles = Article.objects.filter(category_id=category_id)
-
-        # В данном случае просто вернем все статьи, так как в исходной модели нет поля category
-        articles = self.get_queryset()[:5]
+        articles = self.get_queryset().filter(category_id=category_id)
         serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
         return Response(serializer.data)

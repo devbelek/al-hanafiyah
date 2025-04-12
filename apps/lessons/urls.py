@@ -5,7 +5,7 @@ from .views import CategoryViewSet, TopicViewSet, ModuleViewSet, LessonViewSet, 
 router = DefaultRouter()
 router.register(r'ustaz-profile', UstazProfileViewSet, basename='ustaz-profile')
 router.register(r'categories', CategoryViewSet)
-router.register(r'topics', TopicViewSet)
+router.register(r'topics', TopicViewSet, basename='topic')
 router.register(r'modules', ModuleViewSet)
 router.register(r'lessons', LessonViewSet)
 
