@@ -262,12 +262,9 @@ PWA_APP_ICONS = [
     }
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
-    'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
-    'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
-    'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
-]
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 from .static_settings import *
