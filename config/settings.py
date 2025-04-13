@@ -262,9 +262,28 @@ PWA_APP_ICONS = [
     }
 ]
 
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS = [
+    'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
+    'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
+    'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
+    'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
+    'http://3.68.213.169:8080',
+    'https://3.68.213.169:8080',
+    'http://3.68.213.169',
+    'https://3.68.213.169',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080",
+    "https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080",
+    "http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com",
+    "https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com",
+    "http://3.68.213.169:8080",
+    "https://3.68.213.169:8080",
+    "http://3.68.213.169",
+    "https://3.68.213.169",
+]
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 from .static_settings import *
