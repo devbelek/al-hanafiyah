@@ -67,6 +67,20 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://89.169.44.186',
+    'http://89.169.44.186:8080',
+    'https://89.169.44.186',
+    'https://89.169.44.186:8080',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'http://89.169.44.186',
+    'http://89.169.44.186:8080',
+    'https://89.169.44.186',
+    'https://89.169.44.186:8080',
+]
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -258,19 +272,6 @@ PWA_APP_ICONS = [
     }
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://89.169.44.186',
-    'http://89.169.44.186:8080',
-    'https://89.169.44.186',
-    'https://89.169.44.186:8080',
-]
-
-CORS_ALLOWED_ORIGINS = [
-    'http://89.169.44.186',
-    'http://89.169.44.186:8080',
-    'https://89.169.44.186',
-    'https://89.169.44.186:8080',
-]
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 from .static_settings import *
