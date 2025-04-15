@@ -160,36 +160,55 @@ class Lesson(models.Model):
             return
 
         try:
+            # Создаем директорию для миниатюр, если она не существует
+            thumbnail_dir = os.path.dirname(self.media_file.path).replace('/lessons/', '/lessons/thumbnails/')
+            os.makedirs(thumbnail_dir, exist_ok=True)
+
+            # Имя файла миниатюры (транслитерация для избежания проблем с кириллицей)
+            filename_base = os.path.basename(self.media_file.name)
+            filename_ascii = ''.join(c if c.isalnum() or c in '._-' else '_' for c in filename_base)
+            thumbnail_filename = f"thumb_{filename_ascii}.jpg"
+            thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
+
             # Создаем временный файл для миниатюры
             temp_thumb = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
             temp_thumb.close()
 
-            # Извлекаем кадр из видео
+            # Извлекаем кадр из видео с улучшенными параметрами качества
             command = [
                 'ffmpeg', '-i', self.media_file.path,
                 '-ss', '00:00:03',  # 3-я секунда видео
                 '-vframes', '1',  # извлекаем один кадр
-                '-vf', 'scale=320:-1',  # ширина 320px, высота пропорционально
-                '-q:v', '5',  # качество JPEG (1-31, где 1 - лучшее)
+                '-vf', 'scale=640:-1',  # увеличиваем размер до 640px по ширине
+                '-q:v', '2',  # улучшаем качество JPEG (1-31, где 1 - лучшее)
+                '-y',  # перезаписать файл, если он существует
                 temp_thumb.name
             ]
 
             subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            # Сохраняем миниатюру
-            if os.path.exists(temp_thumb.name):
-                filename = f"thumb_{os.path.basename(self.media_file.name)}.jpg"
-                with open(temp_thumb.name, 'rb') as f:
-                    self.thumbnail.save(filename, File(f), save=False)
+            # Сохраняем миниатюру если временный файл создан успешно
+            if os.path.exists(temp_thumb.name) and os.path.getsize(temp_thumb.name) > 0:
+                with open(temp_thumb.name, 'rb') as src_file:
+                    with open(thumbnail_path, 'wb') as dst_file:
+                        dst_file.write(src_file.read())
 
-                # Удаляем временный файл
-                os.unlink(temp_thumb.name)
+                # Устанавливаем права доступа
+                os.chmod(thumbnail_path, 0o644)
+
+                # Путь для сохранения в базе данных
+                rel_path = f"lessons/thumbnails/{'/'.join(self.media_file.name.split('/')[1:-1])}/{thumbnail_filename}"
+                self.thumbnail = rel_path
+
                 logger.info(f"Миниатюра создана для урока: {self.id}")
+                return True
             else:
                 logger.warning(f"Не удалось создать миниатюру для урока: {self.id}")
+                return False
 
         except Exception as e:
-            logger.error(f"Ошибка при создании миниатюры для урока {self.id}: {e}")
+            logger.error(f"Ошибка при создании миниатюры для урока {self.id}: {e}", exc_info=True)
+            return False
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -207,7 +226,7 @@ class Lesson(models.Model):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        # Генерируем миниатюру для видео
+        # Генерируем миниатюру для видео, если еще не создана
         if self.media_type == 'video' and not self.thumbnail:
             self.generate_thumbnail()
             if self.thumbnail:
