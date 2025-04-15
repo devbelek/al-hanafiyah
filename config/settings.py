@@ -61,7 +61,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -257,29 +257,20 @@ PWA_APP_ICONS = [
         'type': 'image/png'
     }
 ]
-#
-# CSRF_TRUSTED_ORIGINS = [
-#     'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
-#     'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080',
-#     'http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
-#     'https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com',
-#     'http://3.68.213.169:8080',
-#     'https://3.68.213.169:8080',
-#     'http://3.68.213.169',
-#     'https://3.68.213.169',
-# ]
-#
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080",
-#     "https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com:8080",
-#     "http://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com",
-#     "https://ec2-3-68-213-169.eu-central-1.compute.amazonaws.com",
-#     "http://3.68.213.169:8080",
-#     "https://3.68.213.169:8080",
-#     "http://3.68.213.169",
-#     "https://3.68.213.169",
-# ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://89.169.44.186',
+    'http://89.169.44.186:8080',
+    'https://89.169.44.186',
+    'https://89.169.44.186:8080',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'http://89.169.44.186',
+    'http://89.169.44.186:8080',
+    'https://89.169.44.186',
+    'https://89.169.44.186:8080',
+]
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='')
 from .static_settings import *
