@@ -156,15 +156,16 @@ class Lesson(models.Model):
 
     def generate_thumbnail(self):
         if self.media_type != 'video' or not self.media_file:
-            return
+            return False
 
         try:
-            # Определяем директорию для превью на основе пути к файлу
-            file_path_parts = self.media_file.path.split('/')
-            year_month = '/'.join(file_path_parts[-3:-1])  # получаем '2025/04'
+            # Получаем год и месяц из пути к файлу
+            file_path_parts = self.media_file.name.split('/')
+            year_month = '/'.join(file_path_parts[1:3])  # получаем '2025/04'
 
-            # Создаем директорию, если она не существует
-            thumbnail_dir = f'/var/www/al-hanafiyah/media/lessons/thumbnails/{year_month}'
+            # Создаем директорию для миниатюр
+            from django.conf import settings
+            thumbnail_dir = os.path.join(settings.MEDIA_ROOT, 'lessons/thumbnails', year_month)
             os.makedirs(thumbnail_dir, exist_ok=True)
 
             # Получаем имя файла
@@ -172,37 +173,29 @@ class Lesson(models.Model):
             thumbnail_filename = f"thumb_{filename_base}.jpg"
             thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
 
-            # Создаем временный файл для миниатюры
-            temp_thumb = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
-            temp_thumb.close()
-
-            # Извлекаем кадр из видео с улучшенными параметрами качества
+            # Извлекаем кадр из видео
             command = [
                 'ffmpeg', '-i', self.media_file.path,
                 '-ss', '00:00:03',  # 3-я секунда видео
                 '-vframes', '1',  # извлекаем один кадр
-                '-vf', 'scale=640:-1',  # увеличиваем размер до 640px по ширине
-                '-q:v', '2',  # улучшаем качество JPEG (1-31, где 1 - лучшее)
-                '-y',  # перезаписать файл, если он существует
-                temp_thumb.name
+                '-vf', 'scale=640:-1',  # размер 640px по ширине
+                '-q:v', '2',  # качество JPEG
+                '-y',  # перезаписать файл
+                thumbnail_path
             ]
 
-            subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            # Сохраняем миниатюру если временный файл создан успешно
-            if os.path.exists(temp_thumb.name) and os.path.getsize(temp_thumb.name) > 0:
-                with open(temp_thumb.name, 'rb') as src_file:
-                    with open(thumbnail_path, 'wb') as dst_file:
-                        dst_file.write(src_file.read())
-
-                # Устанавливаем права доступа
-                os.chmod(thumbnail_path, 0o644)
-
-                # Путь для сохранения в базе данных
+            # Проверяем результат
+            if result == 0 and os.path.exists(thumbnail_path) and os.path.getsize(thumbnail_path) > 0:
+                # Путь для сохранения в базе данных (относительно MEDIA_ROOT)
                 rel_path = f"lessons/thumbnails/{year_month}/{thumbnail_filename}"
                 self.thumbnail = rel_path
-
+                print(f"✅ Превью успешно создано: {rel_path}")
                 return True
+
+            print(f"❌ Не удалось создать превью для {self.id}")
+            return False
         except Exception as e:
             print(f"Ошибка при создании превью: {e}")
             return False
@@ -219,14 +212,16 @@ class Lesson(models.Model):
                 self.slug = f"{base_slug}-{counter}"
                 counter += 1
 
-        # Сохраняем объект сначала для получения ID и path к файлу
+        # Сохраняем объект
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        # Генерируем миниатюру для видео, если еще не создана
-        if self.media_type == 'video' and not self.thumbnail:
-            self.generate_thumbnail()
-            if self.thumbnail:
+        # Генерируем миниатюру для видео, если еще не создана или не существует
+        if self.media_type == 'video' and (not self.thumbnail or
+                                           (self.thumbnail and not os.path.exists(
+                                               os.path.join(settings.MEDIA_ROOT, str(self.thumbnail))))):
+            success = self.generate_thumbnail()
+            if success:
                 # Если миниатюра была создана, сохраняем объект еще раз
                 super().save(update_fields=['thumbnail'])
 
