@@ -79,6 +79,9 @@ class LessonSerializer(serializers.ModelSerializer):
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
             return obj.thumbnail.url
         return None
 

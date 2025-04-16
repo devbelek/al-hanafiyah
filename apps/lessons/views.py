@@ -219,6 +219,10 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['module', 'media_type', 'is_intro']
     search_fields = ['module__name']
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        return context
+
     @swagger_auto_schema(
         operation_description="Получение списка всех уроков",
         manual_parameters=[
