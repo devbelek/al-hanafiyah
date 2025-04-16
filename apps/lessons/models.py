@@ -155,7 +155,6 @@ class Lesson(models.Model):
             self.order = 0
 
     def generate_thumbnail(self):
-        """Генерирует миниатюру для видео с помощью ffmpeg"""
         if self.media_type != 'video' or not self.media_file:
             return
 
