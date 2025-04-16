@@ -159,14 +159,17 @@ class Lesson(models.Model):
             return
 
         try:
-            # Создаем директорию для миниатюр, если она не существует
-            thumbnail_dir = os.path.dirname(self.media_file.path).replace('/lessons/', '/lessons/thumbnails/')
+            # Определяем директорию для превью на основе пути к файлу
+            file_path_parts = self.media_file.path.split('/')
+            year_month = '/'.join(file_path_parts[-3:-1])  # получаем '2025/04'
+
+            # Создаем директорию, если она не существует
+            thumbnail_dir = f'/var/www/al-hanafiyah/media/lessons/thumbnails/{year_month}'
             os.makedirs(thumbnail_dir, exist_ok=True)
 
-            # Имя файла миниатюры (транслитерация для избежания проблем с кириллицей)
+            # Получаем имя файла
             filename_base = os.path.basename(self.media_file.name)
-            filename_ascii = ''.join(c if c.isalnum() or c in '._-' else '_' for c in filename_base)
-            thumbnail_filename = f"thumb_{filename_ascii}.jpg"
+            thumbnail_filename = f"thumb_{filename_base}.jpg"
             thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
 
             # Создаем временный файл для миниатюры
@@ -196,17 +199,12 @@ class Lesson(models.Model):
                 os.chmod(thumbnail_path, 0o644)
 
                 # Путь для сохранения в базе данных
-                rel_path = f"lessons/thumbnails/{'/'.join(self.media_file.name.split('/')[1:-1])}/{thumbnail_filename}"
+                rel_path = f"lessons/thumbnails/{year_month}/{thumbnail_filename}"
                 self.thumbnail = rel_path
 
-                logger.info(f"Миниатюра создана для урока: {self.id}")
                 return True
-            else:
-                logger.warning(f"Не удалось создать миниатюру для урока: {self.id}")
-                return False
-
         except Exception as e:
-            logger.error(f"Ошибка при создании миниатюры для урока {self.id}: {e}", exc_info=True)
+            print(f"Ошибка при создании превью: {e}")
             return False
 
     def save(self, *args, **kwargs):
