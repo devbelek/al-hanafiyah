@@ -67,21 +67,22 @@ class SearchService:
     def _format_questions(questions):
         results = []
         for hit in questions:
-            highlight = (
-                hit.meta.highlight.content[0]
-                if hasattr(hit.meta, 'highlight')
-                else hit.content
-            )
+            highlight = None
+            if hasattr(hit.meta, 'highlight') and hasattr(hit.meta.highlight, 'content'):
+                highlight = hit.meta.highlight.content[0]
+            else:
+                highlight = hit.content if hasattr(hit, 'content') else ""
+
             results.append({
-                'id': hit.id,
+                'id': hit.id if hasattr(hit, 'id') else 0,
                 'type': 'question',
-                'content': hit.content,
-                'url': f'/questions/{hit.id}',
-                'created_at': hit.created_at,
+                'content': hit.content if hasattr(hit, 'content') else "",
+                'url': f'/questions/{hit.id}' if hasattr(hit, 'id') else "",
+                'created_at': hit.created_at if hasattr(hit, 'created_at') else None,
                 'highlight': highlight,
                 'additional_info': {
-                    'is_answered': hit.is_answered,
-                    'telegram': hit.telegram
+                    'is_answered': hit.is_answered if hasattr(hit, 'is_answered') else False,
+                    'telegram': hit.telegram if hasattr(hit, 'telegram') else ""
                 }
             })
         return results
@@ -97,17 +98,16 @@ class SearchService:
                 elif hasattr(hit.meta.highlight, 'content'):
                     highlight = hit.meta.highlight.content[0]
 
-            if not highlight:
-                highlight = hit.title
+            title = hit.title if hasattr(hit, 'title') else "Без названия"
 
             results.append({
                 'id': hit.id,
                 'type': 'article',
-                'title': hit.title,
-                'slug': hit.slug,
-                'url': f'/articles/{hit.slug}',
-                'created_at': hit.created_at,
-                'highlight': highlight
+                'title': title,
+                'slug': hit.slug if hasattr(hit, 'slug') else "",
+                'url': f'/articles/{hit.slug}' if hasattr(hit, 'slug') else "",
+                'created_at': hit.created_at if hasattr(hit, 'created_at') else None,
+                'highlight': highlight or title
             })
         return results
 
@@ -115,23 +115,34 @@ class SearchService:
     def _format_lessons(lessons):
         results = []
         for hit in lessons:
-            highlight = hit.module.name
+            # Проверяем, что module существует
+            if not hasattr(hit, 'module'):
+                continue
+
+            highlight = hit.module.name if hasattr(hit.module, 'name') else ""
 
             if hasattr(hit.meta, 'highlight'):
                 if hasattr(hit.meta.highlight, 'module.name'):
                     highlight = hit.meta.highlight['module.name'][0]
 
+            additional_info = {}
+            if hasattr(hit.module, 'topic'):
+                additional_info['topic'] = hit.module.topic.name if hasattr(hit.module.topic, 'name') else ""
+                if hasattr(hit.module.topic, 'category') and hasattr(hit.module.topic.category, 'name'):
+                    additional_info['category'] = hit.module.topic.category.name
+                else:
+                    additional_info['category'] = ""
+            else:
+                additional_info = {'topic': "", 'category': ""}
+
             results.append({
-                'id': hit.id,
+                'id': hit.id if hasattr(hit, 'id') else 0,
                 'type': 'lesson',
-                'title': hit.module.name,
-                'url': f'/lessons/{hit.slug}',
-                'created_at': hit.created_at,
+                'title': hit.module.name if hasattr(hit.module, 'name') else "",
+                'url': f'/lessons/{hit.slug}' if hasattr(hit, 'slug') else "",
+                'created_at': hit.created_at if hasattr(hit, 'created_at') else None,
                 'highlight': highlight,
-                'additional_info': {
-                    'topic': hit.module.topic.name,
-                    'category': hit.module.topic.category.name
-                }
+                'additional_info': additional_info
             })
         return results
 
@@ -171,22 +182,29 @@ class SearchService:
     def _format_events(events):
         results = []
         for hit in events:
-            highlight = (
-                hit.meta.highlight.title[0]
-                if hasattr(hit.meta, 'highlight')
-                else hit.title
-            )
+            title = hit.title if hasattr(hit, 'title') else "Без названия"
+
+            highlight = title
+            if hasattr(hit.meta, 'highlight'):
+                if hasattr(hit.meta.highlight, 'title'):
+                    highlight = hit.meta.highlight.title[0]
+                elif hasattr(hit.meta.highlight, 'description'):
+                    highlight = hit.meta.highlight.description[0]
+
+            additional_info = {}
+            if hasattr(hit, 'event_date'):
+                additional_info['event_date'] = hit.event_date
+            if hasattr(hit, 'location'):
+                additional_info['location'] = hit.location
+
             results.append({
-                'id': hit.id,
+                'id': hit.id if hasattr(hit, 'id') else 0,
                 'type': 'event',
-                'title': hit.title,
-                'url': f'/events/{hit.id}',
-                'created_at': hit.created_at,
+                'title': title,
+                'url': f'/events/{hit.id}' if hasattr(hit, 'id') else "",
+                'created_at': hit.created_at if hasattr(hit, 'created_at') else None,
                 'highlight': highlight,
-                'additional_info': {
-                    'event_date': hit.event_date,
-                    'location': hit.location
-                }
+                'additional_info': additional_info
             })
         return results
 
@@ -256,28 +274,38 @@ class SearchService:
             }
             suggestions.append(suggestion)
 
-        # После этого добавляем результаты из других типов документов
         for doc_class in [ArticleDocument, LessonDocument, EventDocument]:
-            search = doc_class.search().query(
-                Q('multi_match',
-                  query=query,
-                  fields=['title^3', 'content^2'],
-                  type='best_fields',
-                  minimum_should_match='70%',
-                  fuzziness=1
-                  )
-            )
-            response = search[:2].execute()
+            try:
+                search = doc_class.search().query(
+                    Q('multi_match',
+                      query=query,
+                      fields=['title^3', 'content^2'] if doc_class != LessonDocument else ['module.name^2'],
+                      type='best_fields',
+                      minimum_should_match='70%',
+                      fuzziness=1
+                      )
+                )
+                response = search[:2].execute()
 
-            for hit in response:
-                suggestion = {
-                    'text': hit.title if hasattr(hit, 'title') else hit.content[:100],
-                    'type': doc_class._index._name,
-                    'url': f"/{doc_class._index._name}/{hit.id}",
-                    'score': hit.meta.score
-                }
-                suggestions.append(suggestion)
+                for hit in response:
+                    # Безопасное получение текста
+                    if doc_class == ArticleDocument:
+                        text = hit.title if hasattr(hit, 'title') else hit.content[:100] if hasattr(hit,
+                                                                                                    'content') else "Без названия"
+                    elif doc_class == LessonDocument:
+                        text = hit.module.name if hasattr(hit, 'module') and hasattr(hit.module, 'name') else "Урок"
+                    elif doc_class == EventDocument:
+                        text = hit.title if hasattr(hit, 'title') else "Мероприятие"
+                    else:
+                        text = "Результат поиска"
 
-        # Сортируем все результаты по релевантности
-        suggestions.sort(key=lambda x: x.get('score', 0), reverse=True)
-        return suggestions[:5]
+                    suggestion = {
+                        'text': text,
+                        'type': doc_class._index._name,
+                        'url': f"/{doc_class._index._name}/{hit.id}" if hasattr(hit, 'id') else "#",
+                        'score': hit.meta.score if hasattr(hit.meta, 'score') else 0
+                    }
+                    suggestions.append(suggestion)
+            except Exception as e:
+                # Логирование ошибки, но продолжаем обработку
+                print(f"Ошибка при поиске в {doc_class._index._name}: {e}")
