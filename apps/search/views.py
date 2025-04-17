@@ -6,7 +6,9 @@ from drf_yasg import openapi
 from .services import SearchService
 from .serializers import SearchResultSerializer, SearchSuggestionSerializer
 from .documentation import search_response, suggestions_response
+import logging
 
+logger = logging.getLogger(__name__)
 
 class GlobalSearchView(APIView):
     """
@@ -60,36 +62,37 @@ class GlobalSearchView(APIView):
         }
     )
     def get(self, request):
-        """
-        Выполняет поиск по всему контенту платформы или по конкретному типу контента.
+        try:
+            query = request.GET.get('q', '')
+            doc_type = request.GET.get('type', 'all')
+            page = int(request.GET.get('page', 1))
+            size = int(request.GET.get('size', 10))
 
-        Поддерживает пагинацию результатов. При отсутствии поискового запроса возвращает ошибку 400.
-        Результаты поиска включают в себя заголовок, тип контента, URL и релевантные фрагменты текста.
-        """
-        query = request.GET.get('q', '')
-        doc_type = request.GET.get('type', 'all')
-        page = int(request.GET.get('page', 1))
-        size = int(request.GET.get('size', 10))
+            if not query:
+                return Response({'error': 'Поисковый запрос обязателен'}, status=400)
 
-        if not query:
-            return Response(
-                {'error': 'Поисковый запрос обязателен'},
-                status=400
+            results = SearchService.get_search_results(
+                query=query,
+                doc_type=doc_type,
+                page=page,
+                size=size
             )
 
-        results = SearchService.get_search_results(
-            query=query,
-            doc_type=doc_type,
-            page=page,
-            size=size
-        )
-
-        return Response({
-            'results': results,
-            'total': len(results),
-            'page': page,
-            'size': size
-        })
+            return Response({
+                'results': results,
+                'total': len(results),
+                'page': page,
+                'size': size
+            })
+        except Exception as e:
+            logger.exception(f"Error in search: {str(e)}")
+            return Response({
+                'error': f"Произошла ошибка при поиске: {str(e)}",
+                'results': [],
+                'total': 0,
+                'page': 1,
+                'size': 10
+            }, status=500)
 
 
 class SearchSuggestionsView(APIView):
