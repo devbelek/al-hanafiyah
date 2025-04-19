@@ -67,7 +67,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     comments = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
-    duration = serializers.SerializerMethodField()  # Добавляем поле длительности
+    duration = serializers.CharField(source='duration', read_only=True)
 
     class Meta:
         model = Lesson
@@ -100,6 +100,9 @@ class LessonSerializer(serializers.ModelSerializer):
 
         serializer = CommentSerializer(comments, many=True, context=self.context)
         return serializer.data
+
+    def get_duration(self, obj):
+        return obj.duration
 
 
 class ModuleSerializer(serializers.ModelSerializer):
