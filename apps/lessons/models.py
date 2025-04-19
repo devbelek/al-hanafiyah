@@ -154,6 +154,41 @@ class Lesson(models.Model):
                 raise ValidationError({'is_intro': 'В модуле уже есть вводный урок'})
             self.order = 0
 
+    @property
+    def duration(self):
+        if not self.media_file:
+            return "0:00"
+
+        import subprocess
+        import json
+        import os
+
+        if not os.path.exists(self.media_file.path):
+            return "0:00"
+
+        try:
+            result = subprocess.run([
+                'ffprobe',
+                '-v', 'error',
+                '-show_entries', 'format=duration',
+                '-of', 'json',
+                self.media_file.path
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            if result.returncode != 0:
+                return "0:00"
+
+            output = json.loads(result.stdout)
+            duration = float(output['format']['duration'])
+
+            minutes = int(duration // 60)
+            seconds = int(duration % 60)
+
+            return f"{minutes}:{seconds:02d}"
+        except Exception as e:
+            print(f"Ошибка при получении длительности: {e}")
+            return "0:00"
+
     def generate_thumbnail(self):
         if self.media_type != 'video' or not self.media_file:
             return False

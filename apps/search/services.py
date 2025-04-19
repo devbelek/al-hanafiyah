@@ -101,7 +101,7 @@ class SearchService:
             title = hit.title if hasattr(hit, 'title') else "Без названия"
 
             results.append({
-                'id': hit.id,
+                'id': hit.id if hasattr(hit, 'id') else 0,
                 'type': 'article',
                 'title': title,
                 'slug': hit.slug if hasattr(hit, 'slug') else "",
@@ -148,10 +148,7 @@ class SearchService:
 
     @staticmethod
     def find_similar_questions(text, limit=3):
-        """
-        Поиск похожих вопросов по тексту.
-        """
-        if len(text) < 10:
+        if len(text) < 3:
             return []
 
         search = QuestionDocument.search().query(
@@ -159,7 +156,7 @@ class SearchService:
               query=text,
               fields=['content^2'],
               type='best_fields',
-              minimum_should_match='70%',
+              minimum_should_match='30%',
               fuzziness='AUTO')
         )
 

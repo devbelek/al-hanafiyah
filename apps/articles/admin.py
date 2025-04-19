@@ -13,7 +13,7 @@ class ArticleAdmin(admin.ModelAdmin):
     list_display = ['title_display', 'thumbnail_display', 'author_display', 'date_display', 'edit_button']
     list_filter = ['created_at', 'author', 'is_moderated']
     search_fields = ['title', 'content']
-    fields = ['title', 'content', 'short_description', 'image', 'author', 'is_moderated']
+    fields = ['title', 'content', 'image', 'author', 'is_moderated']
     ordering = ['-created_at']
     list_per_page = 20
     autocomplete_fields = ['author']
@@ -29,7 +29,6 @@ class ArticleAdmin(admin.ModelAdmin):
     thumbnail_display.short_description = 'Изображение'
 
     def title_display(self, obj):
-        # Ограничиваем длину заголовка для компактности
         title = obj.title if len(obj.title) <= 50 else obj.title[:47] + '...'
         return format_html(
             '<div class="article-title-container">'
@@ -42,7 +41,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
     def author_display(self, obj):
         if obj.author:
-            return "Устаз"  # Можно изменить на какое-то конкретное имя, если нужно
+            return "Устаз"
         return "-"
 
     author_display.short_description = 'Автор'
@@ -77,7 +76,6 @@ class ArticleAdmin(admin.ModelAdmin):
         return actions
 
     def save_model(self, request, obj, form, change):
-        # Если пользователь является устазом, устанавливаем его как автора
         if request.user.profile.is_ustaz and not obj.author:
             try:
                 ustaz_profile = UstazProfile.objects.get(user=request.user)

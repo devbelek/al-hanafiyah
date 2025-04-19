@@ -277,12 +277,20 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     )
     @action(detail=False, methods=['get'])
     def by_category(self, request):
-        """
-        Поиск статей по категории.
-        """
         category_id = request.query_params.get('category')
         if not category_id:
             return Response({"error": "Не указана категория"}, status=400)
-        articles = self.get_queryset().filter(category_id=category_id)
-        serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
-        return Response(serializer.data)
+
+        try:
+            category_id = int(category_id)
+            articles = Article.objects.filter(category_id=category_id, is_moderated=True)
+
+            if not articles.exists():
+                return Response([], status=200)
+
+            serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
+            return Response(serializer.data)
+        except ValueError:
+            return Response({"error": "Некорректный ID категории"}, status=400)
+        except Exception as e:
+            return Response({"error": f"Ошибка при поиске статей: {str(e)}"}, status=500)

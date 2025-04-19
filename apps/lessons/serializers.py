@@ -67,15 +67,16 @@ class CommentSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     comments = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()  # Добавляем поле длительности
 
     class Meta:
         model = Lesson
         fields = [
             'id', 'module', 'media_type',
             'media_file', 'thumbnail_url', 'is_intro', 'order', 'created_at',
-            'updated_at', 'slug', 'comments'
+            'updated_at', 'slug', 'comments', 'duration'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'thumbnail_url']
+        read_only_fields = ['created_at', 'updated_at', 'thumbnail_url', 'duration']
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
