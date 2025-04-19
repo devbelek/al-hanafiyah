@@ -194,19 +194,26 @@ class Lesson(models.Model):
             return False
 
         try:
-            # Получаем год и месяц из пути к файлу
-            file_path_parts = self.media_file.name.split('/')
-            year_month = '/'.join(file_path_parts[1:3])  # получаем '2025/04'
+            # Получаем год и месяц из пути к файлу или используем текущую дату
+            import datetime
+            now = datetime.datetime.now()
+            year_month = f"{now.year}/{now.month:02d}"
+
+            from django.conf import settings
 
             # Создаем директорию для миниатюр
-            from django.conf import settings
             thumbnail_dir = os.path.join(settings.MEDIA_ROOT, 'lessons/thumbnails', year_month)
             os.makedirs(thumbnail_dir, exist_ok=True)
 
-            # Получаем имя файла
-            filename_base = os.path.basename(self.media_file.name)
-            thumbnail_filename = f"thumb_{filename_base}.jpg"
+            # Формируем имя файла миниатюры
+            media_filename = os.path.basename(self.media_file.name)
+            thumbnail_filename = f"thumb_{media_filename}.jpg"
             thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
+
+            # Проверяем существование медиа-файла
+            if not os.path.exists(self.media_file.path):
+                print(f"❌ Медиа-файл не существует: {self.media_file.path}")
+                return False
 
             # Извлекаем кадр из видео
             command = [
@@ -219,20 +226,22 @@ class Lesson(models.Model):
                 thumbnail_path
             ]
 
+            print(f"Выполняется команда: {' '.join(command)}")
             result = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             # Проверяем результат
             if result == 0 and os.path.exists(thumbnail_path) and os.path.getsize(thumbnail_path) > 0:
-                # Путь для сохранения в базе данных (относительно MEDIA_ROOT)
                 rel_path = f"lessons/thumbnails/{year_month}/{thumbnail_filename}"
                 self.thumbnail = rel_path
                 print(f"✅ Превью успешно создано: {rel_path}")
                 return True
 
-            print(f"❌ Не удалось создать превью для {self.id}")
+            print(f"❌ Не удалось создать превью для {self.id}. Код возврата ffmpeg: {result}")
             return False
         except Exception as e:
-            print(f"Ошибка при создании превью: {e}")
+            import traceback
+            print(f"Ошибка при создании превью: {str(e)}")
+            print(traceback.format_exc())
             return False
 
     def save(self, *args, **kwargs):

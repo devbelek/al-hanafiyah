@@ -79,12 +79,21 @@ class LessonSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at', 'thumbnail_url', 'duration']
 
     def get_thumbnail_url(self, obj):
-        if obj.thumbnail:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return obj.thumbnail.url
-        return None
+        """Получение URL миниатюры для урока."""
+        try:
+            if obj.thumbnail:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.thumbnail.url)
+
+                # Если запрос недоступен, формируем URL вручную
+                from django.conf import settings
+                return f"{settings.MEDIA_URL}{obj.thumbnail}"
+        except Exception as e:
+            print(f"Ошибка при получении URL миниатюры: {str(e)}")
+
+        # Возвращаем заглушку, если миниатюра недоступна
+        return "/static/admin/img/icon-no.svg"
 
     def get_comments(self, obj):
         comments = obj.comments.filter(parent=None)
