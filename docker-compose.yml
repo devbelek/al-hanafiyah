@@ -33,9 +33,9 @@ services:
     build: .
     command: >
       sh -c "python manage.py wait_for_elasticsearch &&
-             
              python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+             python -m pip install watchdog &&
+             watchmedo auto-restart -d /app -p '*.py' -- python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
