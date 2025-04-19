@@ -283,14 +283,25 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
 
         try:
             category_id = int(category_id)
-            articles = Article.objects.filter(category_id=category_id, is_moderated=True)
 
-            if not articles.exists():
-                return Response([], status=200)
+            from apps.lessons.models import Category
+            category_exists = Category.objects.filter(id=category_id).exists()
+
+            if not category_exists:
+                return Response({"message": f"Категория с id={category_id} не найдена"}, status=200)
+
+            all_articles = Article.objects.all()
+            print(f"Всего статей: {all_articles.count()}")
+
+            articles = Article.objects.filter(category_id=category_id, is_moderated=True)
+            print(f"Статей в категории {category_id}: {articles.count()}")
 
             serializer = ArticleListSerializer(articles, many=True, context=self.get_serializer_context())
             return Response(serializer.data)
         except ValueError:
             return Response({"error": "Некорректный ID категории"}, status=400)
         except Exception as e:
+            import traceback
+            print(f"Ошибка при поиске статей по категории: {e}")
+            print(traceback.format_exc())
             return Response({"error": f"Ошибка при поиске статей: {str(e)}"}, status=500)

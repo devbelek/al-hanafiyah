@@ -148,32 +148,42 @@ class SearchService:
 
     @staticmethod
     def find_similar_questions(text, limit=3):
-        if len(text) < 3:
+        if len(text) < 2:
             return []
 
-        search = QuestionDocument.search().query(
-            Q('multi_match',
-              query=text,
-              fields=['content^2'],
-              type='best_fields',
-              minimum_should_match='30%',
-              fuzziness='AUTO')
-        )
+        try:
+            words = text.split()
+            if words:
+                search_text = words[0]
+            else:
+                search_text = text
 
-        search = search.filter('term', is_answered=True)
-        response = search[:limit].execute()
+            search = QuestionDocument.search().query(
+                Q('multi_match',
+                  query=search_text,
+                  fields=['content^2'],
+                  type='best_fields',
+                  minimum_should_match='20%',
+                  fuzziness='AUTO')
+            )
 
-        results = []
-        for hit in response:
-            results.append({
-                'id': hit.id,
-                'content': hit.content,
-                'created_at': hit.created_at,
-                'is_answered': hit.is_answered,
-                'similarity_score': hit.meta.score
-            })
+            search = search.filter('term', is_answered=True)
+            response = search[:limit].execute()
 
-        return results
+            results = []
+            for hit in response:
+                results.append({
+                    'id': hit.id,
+                    'content': hit.content,
+                    'created_at': hit.created_at,
+                    'is_answered': hit.is_answered,
+                    'similarity_score': hit.meta.score
+                })
+
+            return results
+        except Exception as e:
+            print(f"Ошибка при поиске похожих вопросов: {e}")
+            return []
 
     @staticmethod
     def _format_events(events):
@@ -183,9 +193,9 @@ class SearchService:
 
             highlight = title
             if hasattr(hit.meta, 'highlight'):
-                if hasattr(hit.meta.highlight, 'title'):
+                if hasattr(hit.meta.highlight, 'title') and len(hit.meta.highlight.title) > 0:
                     highlight = hit.meta.highlight.title[0]
-                elif hasattr(hit.meta.highlight, 'description'):
+                elif hasattr(hit.meta.highlight, 'description') and len(hit.meta.highlight.description) > 0:
                     highlight = hit.meta.highlight.description[0]
 
             additional_info = {}
