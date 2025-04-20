@@ -61,7 +61,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./staticfiles:/app/staticfiles  # Изменено с ./static:/app/static на ./staticfiles:/app/staticfiles
+      - ./staticfiles:/app/staticfiles
       - ./media:/app/media
     depends_on:
       - web
