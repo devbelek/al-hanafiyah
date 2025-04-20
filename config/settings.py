@@ -143,23 +143,23 @@ REST_FRAMEWORK = {
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME', default='hanafi'),
-        'USER': env('DB_USER', default='ustaz'),
-        'PASSWORD': env('DB_PASSWORD', default='ustaz'),
-        'HOST': env('DB_HOST', default='db'),
-        'PORT': env('DB_PORT', default='5432'),
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / "db.sqlite3",
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': env('DB_NAME', default='hanafi'),
+#         'USER': env('DB_USER', default='ustaz'),
+#         'PASSWORD': env('DB_PASSWORD', default='ustaz'),
+#         'HOST': env('DB_HOST', default='db'),
+#         'PORT': env('DB_PORT', default='5432'),
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -238,7 +238,7 @@ CKEDITOR_IMAGE_BACKEND = "pillow"
 
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'http://elasticsearch:9200',
+        'hosts': 'http://localhost:9200',
         'timeout': 30,
     }
 }
