@@ -38,6 +38,7 @@ services:
              watchmedo auto-restart -d /app -p '*.py' -- python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
+      - ./media:/app/media/
     ports:
       - "8000:8000"
     environment:
@@ -118,3 +119,4 @@ services:
 volumes:
   postgres_data:
   elasticsearch_data:
+  media:
