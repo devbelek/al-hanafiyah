@@ -37,8 +37,8 @@ services:
              python -m pip install watchdog &&
              watchmedo auto-restart -d /app -p '*.py' -- python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - .:/app
-      - ./media:/app/media/
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
     ports:
       - "8000:8000"
     environment:
@@ -61,9 +61,9 @@ services:
     ports:
       - "80:80"
     volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./staticfiles:/app/staticfiles
-      - ./media:/app/media
     depends_on:
       - web
     restart: unless-stopped
@@ -119,4 +119,5 @@ services:
 volumes:
   postgres_data:
   elasticsearch_data:
-  media:
+  static_volume:
+  media_volume:
