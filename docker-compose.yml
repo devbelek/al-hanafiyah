@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    image: elasticsearch:7.17.9
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
