@@ -74,7 +74,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://89.169.44.186:8080',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://3.77.235.250:3000',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -84,7 +83,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://89.169.44.186',
     'https://89.169.44.186',
-    'http://3.77.235.250:3000',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -240,7 +238,7 @@ CKEDITOR_IMAGE_BACKEND = "pillow"
 
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'http://localhost:9200',
+        'hosts': 'http://elasticsearch:9200',
         'timeout': 30,
     }
 }
