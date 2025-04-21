@@ -74,6 +74,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://89.169.44.186:8080',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://3.77.235.250:3000',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -83,6 +84,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://89.169.44.186',
     'https://89.169.44.186',
+    'http://3.77.235.250:3000',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -143,23 +145,23 @@ REST_FRAMEWORK = {
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': env('DB_NAME', default='hanafi'),
-#         'USER': env('DB_USER', default='ustaz'),
-#         'PASSWORD': env('DB_PASSWORD', default='ustaz'),
-#         'HOST': env('DB_HOST', default='db'),
-#         'PORT': env('DB_PORT', default='5432'),
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / "db.sqlite3",
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME', default='hanafi'),
+        'USER': env('DB_USER', default='ustaz'),
+        'PASSWORD': env('DB_PASSWORD', default='ustaz'),
+        'HOST': env('DB_HOST', default='db'),
+        'PORT': env('DB_PORT', default='5432'),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / "db.sqlite3",
+#     }
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
